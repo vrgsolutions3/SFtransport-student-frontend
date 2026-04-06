@@ -153,4 +153,8 @@ export const apiClient = {
   /** Envia FormData (multipart) — sem Content-Type manual */
   postForm: <T>(path: string, body: FormData) =>
     request<T>(path, { method: "POST", body }),
+
+  /** PATCH com FormData (multipart) — sem Content-Type manual */
+  patchForm: <T>(path: string, body: FormData) =>
+    request<T>(path, { method: "PATCH", body }),
 };
