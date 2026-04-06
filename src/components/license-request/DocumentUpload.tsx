@@ -146,7 +146,7 @@ export default function DocumentUpload({
   return (
     <div className={cardBorder}>
       {/* ── Cabeçalho ── */}
-      <div className="p-4 flex items-center justify-between gap-3">
+      <div className="px-4 pt-4 pb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className={cn(
             "p-2 rounded-lg shrink-0 transition-colors",
@@ -159,7 +159,7 @@ export default function DocumentUpload({
               {config.label}
               {config.required && <span className="text-error text-xs">*</span>}
             </p>
-            <p className="text-[11px] text-on-surface-variant leading-tight">
+            <p className="text-xs text-on-surface-variant leading-tight mt-0.5">
               {config.description}
             </p>
           </div>
@@ -171,11 +171,11 @@ export default function DocumentUpload({
 
       {/* ── Área de arquivo ── */}
       {entry ? (
-        <div className="px-4 pb-4 space-y-2">
+        <div className="px-4 pb-4 pt-4 space-y-2">
           {/* Preview row */}
           <div className="flex items-center gap-3 p-2 bg-surface-container-low rounded-lg border border-outline-variant/40">
             {/* Thumbnail */}
-            <div className="h-12 w-12 shrink-0 flex items-center justify-center bg-surface-container-high rounded border border-outline-variant/30 overflow-hidden">
+            <div className="h-14 w-14 shrink-0 flex items-center justify-center bg-surface-container-high rounded border border-outline-variant/30 overflow-hidden">
               {isProcessing ? (
                 <Loader2 className="w-5 h-5 text-primary animate-spin" />
               ) : isPdf ? (
@@ -217,12 +217,12 @@ export default function DocumentUpload({
         </div>
       ) : (
         /* ── Botão de seleção ── */
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 pt-4">
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={disabled}
-            className="w-full py-3 border-2 border-dashed border-outline-variant rounded-xl text-xs font-bold text-primary hover:bg-primary/5 hover:border-primary/50 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-40"
+            className="w-full py-4 border-2 border-dashed border-outline-variant rounded-xl text-xs font-bold text-primary hover:bg-primary/5 hover:border-primary/50 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-40"
           >
             {config.acceptPdf
               ? <FilePlus className="w-4 h-4" />
@@ -237,6 +237,7 @@ export default function DocumentUpload({
         ref={inputRef}
         type="file"
         accept={config.acceptPdf ? "image/jpeg,image/png,application/pdf" : "image/jpeg,image/png"}
+        capture={config.acceptPdf ? undefined : "environment"}
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) onFileSelect(file);
