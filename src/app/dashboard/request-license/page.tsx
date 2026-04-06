@@ -15,6 +15,7 @@ import Step1InfoForm, {
 import Step3Grade, {
   Step3Data,
 } from "@/components/license-request/Step3grade";
+import ConfirmSubmitModal from "@/components/license-request/ConfirmSubmitModal";
 
 import { LICENSE_DOCUMENTS } from "@/constants/license-documents";
 import {
@@ -150,6 +151,7 @@ export default function RequestLicensePage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     const savedStep1 = getWithTTL<Step1Data>(STORAGE_KEY, ONE_DAY_MS);
@@ -336,12 +338,23 @@ export default function RequestLicensePage() {
             loading={submitting}
             disabled={step3.selections.length === 0 || submitting}
             icon={Send}
-            onClick={handleFinalSubmit}
+            onClick={() => setShowConfirmModal(true)}
           >
             Finalizar
           </Button>
         </div>
       )}
+
+      <ConfirmSubmitModal
+        open={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleFinalSubmit}
+        submitting={submitting}
+        institution={step1.institution}
+        degree={step1.degree}
+        shift={step1.shift}
+        totalPeriods={step3.selections.length}
+      />
     </div>
   );
 }
