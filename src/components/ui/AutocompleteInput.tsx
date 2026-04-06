@@ -136,11 +136,11 @@ export function AutocompleteInput({
   };
 
   return (
-    <div ref={wrapperRef} className="space-y-1.5">
+    <div ref={wrapperRef} className="relative space-y-1.5">
       {/* Label */}
       <label
         htmlFor={id}
-        className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1"
+        className="text-sm font-medium text-on-surface-variant ml-1"
       >
         {label} {required && <span className="text-error">*</span>}
       </label>
