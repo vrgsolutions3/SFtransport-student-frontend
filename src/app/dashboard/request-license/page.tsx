@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertCircle, Send } from "lucide-react";
 
 import { api } from "@/lib/api";
+import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import StepIndicator from "@/components/license-request/StepIndicator";
 import Step1InfoForm, {
@@ -264,8 +265,8 @@ export default function RequestLicensePage() {
         <ThemeToggle className="text-on-surface-variant hover:bg-surface-container-low" />
       </header>
 
-      <main className="pt-20 pb-10 px-5 max-w-lg mx-auto">
-        <StepIndicator current={step} />
+      <main className="pt-20 pb-28 px-5 max-w-lg mx-auto">
+        <StepIndicator currentStep={step} />
 
         {error && (
           <div className="bg-error-container border border-error-border text-error text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
@@ -301,6 +302,46 @@ export default function RequestLicensePage() {
           />
         )}
       </main>
+
+      {step === 1 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 px-6 pb-8 pt-4 flex justify-center bg-gradient-to-t from-surface via-surface/90 to-transparent">
+          <Button
+            type="submit"
+            form="license-step1"
+            variant="primary"
+            size="lg"
+            icon={ArrowRight}
+            className="w-3/4 max-w-xs"
+          >
+            Continuar
+          </Button>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 px-6 pb-8 pt-6 flex items-center gap-3 bg-linear-to-t from-surface via-surface/90 to-transparent">
+          <button
+            type="button"
+            onClick={handleBackFromStep3}
+            disabled={submitting}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container rounded-lg transition-all disabled:opacity-40"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </button>
+          <Button
+            variant="primary"
+            size="lg"
+            className="flex-1"
+            loading={submitting}
+            disabled={step3.selections.length === 0 || submitting}
+            icon={Send}
+            onClick={handleFinalSubmit}
+          >
+            Finalizar
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
