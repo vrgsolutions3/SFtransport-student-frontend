@@ -7,12 +7,12 @@
 export interface PreprocessOptions {
   /**
    * Dimensão máxima (largura ou altura) em pixels.
-   * Mobile: 256 | Desktop: 512
+   * Mobile: 1024 | Desktop: 1600
    */
   targetSize: number;
   /**
    * Qualidade JPEG entre 0 e 1.
-   * Default: 0.82 — boa qualidade com redução razoável.
+   * Default: 0.95 — prioriza nitidez para emissão da carteirinha.
    */
   quality?: number;
 }
@@ -40,10 +40,10 @@ export function isMobileDevice(): boolean {
 
 /**
  * Retorna o targetSize recomendado baseado no dispositivo.
- * Mobile: 256px | Desktop: 512px
+ * Mobile: 1024px | Desktop: 1600px
  */
 export function getTargetSize(): number {
-  return isMobileDevice() ? 256 : 512;
+  return isMobileDevice() ? 1024 : 1600;
 }
 
 /**
@@ -57,7 +57,7 @@ export async function preprocessImage(
   file: File,
   options: PreprocessOptions
 ): Promise<PreprocessResult> {
-  const { targetSize, quality = 0.82 } = options;
+  const { targetSize, quality = 0.95 } = options;
 
   // 1. Decodifica a imagem como bitmap (mais eficiente que new Image())
   const bitmap = await createImageBitmap(file);

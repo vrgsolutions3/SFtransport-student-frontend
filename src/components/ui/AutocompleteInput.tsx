@@ -136,11 +136,11 @@ export function AutocompleteInput({
   };
 
   return (
-    <div ref={wrapperRef} className="relative w-full min-w-0 space-y-1.5">
+    <div ref={wrapperRef} className="relative space-y-1.5">
       {/* Label */}
       <label
         htmlFor={id}
-        className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1"
+        className="text-sm font-medium text-on-surface-variant ml-1"
       >
         {label} {required && <span className="text-error">*</span>}
       </label>
@@ -199,7 +199,7 @@ export function AutocompleteInput({
             <li
               key={option}
               className={cn(
-                "px-4 py-3 cursor-pointer text-sm font-medium transition-colors break-words",
+                "px-4 py-3 cursor-pointer text-sm font-medium transition-colors wrap-break-word",
                 activeIndex === index
                   ? "bg-primary text-white"
                   : "text-on-surface hover:bg-surface-container-high",

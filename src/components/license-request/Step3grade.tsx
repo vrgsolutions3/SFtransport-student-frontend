@@ -1,13 +1,13 @@
 "use client";
 
 import { useMemo, useState as useSafeState } from "react";
-import { Button } from "@/components/ui/Button";
-import { ArrowLeft, Check, Moon, Send, SunMedium, Sunset, TriangleAlert } from "lucide-react";
+import { Check, Moon, Sun, Sunrise, TriangleAlert } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface DayPeriod {
-  day: string; // "SEG" | "TER" | "QUA" | "QUI" | "SEX" | "SAB"
+  day: string; // "SEG" | "TER" | "QUA" | "QUI" | "SEX"
   period: string; // "Manhã" | "Tarde" | "Noite"
 }
 
@@ -32,28 +32,19 @@ const DAYS = [
   { short: "QUA", full: "Quarta-feira", dayOfWeek: 3 },
   { short: "QUI", full: "Quinta-feira", dayOfWeek: 4 },
   { short: "SEX", full: "Sexta-feira", dayOfWeek: 5 },
-  { short: "SAB", full: "Sábado", dayOfWeek: 6 },
 ];
 
-const PERIODS = [
-  {
-    id: "Manhã",
-    label: "MANHÃ",
-    time: "07:00 — 11:30",
-    icon: SunMedium,
-  },
-  {
-    id: "Tarde",
-    label: "TARDE",
-    time: "13:00 — 17:30",
-    icon: Sunset,
-  },
-  {
-    id: "Noite",
-    label: "NOITE",
-    time: "18:30 — 22:40",
-    icon: Moon,
-  },
+interface Period {
+  id: string;
+  label: string;
+  time: string;
+  Icon: LucideIcon;
+}
+
+const PERIODS: Period[] = [
+  { id: "Manhã",  label: "Manhã", time: "07:00 — 11:30", Icon: Sunrise },
+  { id: "Tarde",  label: "Tarde", time: "13:00 — 17:30", Icon: Sun     },
+  { id: "Noite",  label: "Noite", time: "18:30 — 22:40", Icon: Moon    },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -67,9 +58,6 @@ function buildKey(day: string, period: string) {
 export default function Step3Grade({
   data,
   onChange,
-  onBack,
-  onSubmit,
-  submitting = false,
   todayIndex,
 }: Step3GradeProps) {
   const todayIdx = todayIndex ?? new Date().getDay();
@@ -106,11 +94,9 @@ export default function Step3Grade({
   const activeDayFull =
     DAYS.find((d) => d.short === activeDay)?.full ?? activeDay;
 
-  const canConfirm = totalSelected > 0;
-
   return (
     <div className="space-y-6">
-      {/* ⚠️ ALERTA DE CONFIRMAÇÃO - DESTAQUE ADICIONADO */}
+      {/* Alerta */}
       <div
         className="flex items-start gap-3 rounded-xl bg-warning/10 border border-warning/30"
         style={{ padding: "14px 16px" }}
@@ -128,16 +114,13 @@ export default function Step3Grade({
         </div>
       </div>
 
-      {/* Dia da semana - SEM DATA NUMÉRICA */}
+      {/* Dia da semana */}
       <div>
-        <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1 mb-3 block">
+        <label className="text-sm font-medium text-on-surface-variant ml-1 mb-3 block">
           Dias da semana com aula (recorrente durante o semestre)
         </label>
 
-        <div
-          className="flex gap-2 overflow-x-auto pb-1"
-          style={{ scrollbarWidth: "none" }}
-        >
+        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
           {DAYS.map((day) => {
             const active = day.short === activeDay;
             const isToday = day.dayOfWeek === todayIdx;
@@ -149,12 +132,11 @@ export default function Step3Grade({
                 type="button"
                 onClick={() => setActiveDay(day.short)}
                 aria-label={`Selecionar ${day.full}${isToday ? " (hoje)" : ""}`}
-                className={`relative shrink-0 flex flex-col items-center justify-center rounded-2xl transition-all active:scale-95 ${
+                className={`relative shrink-0 flex-1 min-w-0 flex flex-col items-center justify-center gap-1 rounded-2xl h-16 transition-all active:scale-95 ${
                   active
                     ? "bg-primary text-white shadow-md"
                     : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
                 }`}
-                style={{ width: "64px", height: "72px", gap: "4px" }}
               >
                 <span
                   className={`text-xs font-bold uppercase tracking-wide ${
@@ -163,7 +145,6 @@ export default function Step3Grade({
                 >
                   {day.short}
                 </span>
-                {/* Removeu-se o <span> com dateNum */}
 
                 {hasSel && !active && (
                   <span
@@ -176,11 +157,7 @@ export default function Step3Grade({
                 {isToday && !active && (
                   <span
                     className="absolute -top-1 -right-1 bg-secondary rounded-full"
-                    style={{
-                      width: "10px",
-                      height: "10px",
-                      border: "2px solid var(--color-surface)",
-                    }}
+                    style={{ width: "10px", height: "10px", border: "2px solid var(--color-surface)" }}
                     aria-label="Dia atual"
                   />
                 )}
@@ -192,7 +169,7 @@ export default function Step3Grade({
 
       {/* Períodos */}
       <div>
-        <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1 mb-3 block">
+        <label className="text-sm font-medium text-on-surface-variant ml-1 mb-3 block">
           Períodos — {activeDayFull}
         </label>
 
@@ -212,32 +189,24 @@ export default function Step3Grade({
             >
               <div
                 className={`flex items-center justify-center rounded-xl shrink-0 ${
-                  period.selected
-                    ? "bg-primary/10"
-                    : "bg-surface-container-high"
+                  period.selected ? "bg-primary/10" : "bg-surface-container-high"
                 }`}
                 style={{ width: "48px", height: "48px" }}
               >
-                <period.icon
-                  className={`w-5 h-5 ${
-                    period.selected ? "text-primary" : "text-on-surface-variant"
-                  }`}
+                <period.Icon
+                  className={`w-5 h-5 ${period.selected ? "text-primary" : "text-on-surface-variant"}`}
                 />
               </div>
 
               <div className="flex-1 text-left">
                 <p
-                  className={`text-xs font-bold uppercase tracking-widest mb-0.5 ${
+                  className={`text-sm font-medium mb-0.5 ${
                     period.selected ? "text-primary" : "text-on-surface-variant"
                   }`}
                 >
                   {period.label}
                 </p>
-                <p
-                  className={`text-lg font-semibold leading-tight ${
-                    period.selected ? "text-on-surface" : "text-on-surface"
-                  }`}
-                >
+                <p className="text-lg font-semibold leading-tight text-on-surface">
                   {period.time}
                 </p>
               </div>
@@ -251,67 +220,20 @@ export default function Step3Grade({
                 style={{ width: "28px", height: "28px" }}
                 aria-hidden="true"
               >
-                {period.selected && (
-                  <Check className="w-4 h-4 text-white" />
-                )}
+                {period.selected && <Check className="w-4 h-4 text-white" />}
               </div>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="border-t border-outline-variant pt-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
-              Resumo da seleção
-            </p>
-            <p className="text-base font-bold text-primary mt-0.5">
-              {totalSelected === 0
-                ? "Nenhum período selecionado"
-                : `${totalSelected} ${totalSelected === 1 ? "Período Selecionado" : "Períodos Selecionados"}`}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
-              Referência
-            </p>
-            <p className="text-sm font-semibold text-on-surface mt-0.5">
-              Grade semestral
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            disabled={submitting}
-            className="flex items-center gap-1 text-on-surface-variant 
-            font-semibold text-sm active:scale-95 transition-all disabled:opacity-50 px-4 py-2 rounded-lg 
-            hover:bg-surface-container-high"
-            aria-label="Voltar para etapa anterior"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar
-          </button>
-
-          <div className="flex-1">
-            <Button
-              type="button"
-              variant="primary"
-              size="lg"
-              fullWidth
-              loading={submitting}
-              disabled={!canConfirm || submitting}
-              icon={Send}
-              onClick={onSubmit}
-            >
-              Finalizar Solicitação
-            </Button>
-          </div>
-        </div>
+      {/* Resumo */}
+      <div className="mt-2 bg-surface-container-low rounded-xl px-4 py-3 flex items-center justify-between border border-outline-variant/40">
+        <span className={`text-sm ${totalSelected === 0 ? "text-on-surface-muted" : "text-primary font-medium"}`}>
+          {totalSelected === 0
+            ? "Nenhum período selecionado"
+            : `${totalSelected} período${totalSelected !== 1 ? "s" : ""} selecionado${totalSelected !== 1 ? "s" : ""}`}
+        </span>
       </div>
     </div>
   );

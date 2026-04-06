@@ -6,7 +6,38 @@ import Link from "next/link";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { useAuth } from "@/hooks/useAuth";
-import { Mail, Phone, UserRound, Lock, Send} from "lucide-react";
+import { Mail, Phone, UserRound, Lock, Send, CreditCard } from "lucide-react";
+
+function formatPhone(digits: string): string {
+  if (digits.length === 0) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+function formatCpf(digits: string): string {
+  if (digits.length === 0) return "";
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9)
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
+function isValidCpf(cpf: string): boolean {
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  const calc = (digits: string, weights: number[]) => {
+    const sum = digits.split("").reduce((acc, d, i) => acc + parseInt(d) * weights[i], 0);
+    const rem = sum % 11;
+    return rem < 2 ? 0 : 11 - rem;
+  };
+  const d1 = calc(cpf.slice(0, 9), [10, 9, 8, 7, 6, 5, 4, 3, 2]);
+  if (d1 !== parseInt(cpf[9])) return false;
+  const d2 = calc(cpf.slice(0, 10), [11, 10, 9, 8, 7, 6, 5, 4, 3, 2]);
+  return d2 === parseInt(cpf[10]);
+}
 
 export function RegisterForm() {
   const router = useRouter();
@@ -16,10 +47,21 @@ export function RegisterForm() {
     name: "",
     email: "",
     telephone: "",
+    cpf: "",
     password: "",
     confirmPassword: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+    setFormData({ ...formData, telephone: digits });
+  };
+
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+    setFormData({ ...formData, cpf: digits });
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -40,6 +82,17 @@ export function RegisterForm() {
 
     if (!formData.telephone) {
       newErrors.telephone = "Telefone é obrigatório";
+      isValid = false;
+    } else if (formData.telephone.length < 10) {
+      newErrors.telephone = "Telefone inválido — mínimo 10 dígitos com DDD";
+      isValid = false;
+    }
+
+    if (!formData.cpf) {
+      newErrors.cpf = "CPF é obrigatório";
+      isValid = false;
+    } else if (!isValidCpf(formData.cpf)) {
+      newErrors.cpf = "CPF inválido";
       isValid = false;
     }
 
@@ -72,6 +125,7 @@ export function RegisterForm() {
         name: formData.name,
         email: formData.email,
         telephone: formData.telephone,
+        cpf: formData.cpf,
         password: formData.password,
       });
 
@@ -111,6 +165,7 @@ export function RegisterForm() {
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           error={errors.name}
+          maxLength={100}
         />
 
         <Input
@@ -121,6 +176,7 @@ export function RegisterForm() {
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           error={errors.email}
+          maxLength={254}
         />
 
         <Input
@@ -128,19 +184,31 @@ export function RegisterForm() {
           type="tel"
           icon={Phone}
           placeholder="(22) 99999-9999"
-          value={formData.telephone}
-          onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
+          value={formatPhone(formData.telephone)}
+          onChange={handlePhoneChange}
           error={errors.telephone}
+        />
+
+        <Input
+          label="CPF"
+          type="text"
+          icon={CreditCard}
+          placeholder="000.000.000-00"
+          value={formatCpf(formData.cpf)}
+          onChange={handleCpfChange}
+          error={errors.cpf}
+          inputMode="numeric"
         />
 
         <Input
           label="Senha"
           type="password"
-          icon={Lock} 
+          icon={Lock}
           placeholder="Mín. 8 caracteres, maiúscula e número"
           value={formData.password}
           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           error={errors.password}
+          maxLength={64}
         />
 
         <Input
@@ -151,6 +219,7 @@ export function RegisterForm() {
           value={formData.confirmPassword}
           onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
           error={errors.confirmPassword}
+          maxLength={64}
         />
 
         <Button

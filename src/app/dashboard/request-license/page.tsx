@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertCircle, Send } from "lucide-react";
 
 import { api } from "@/lib/api";
+import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import StepIndicator from "@/components/license-request/StepIndicator";
 import Step1InfoForm, {
@@ -16,11 +17,18 @@ import Step3Grade, {
 } from "@/components/license-request/Step3grade";
 
 import { LICENSE_DOCUMENTS } from "@/constants/license-documents";
+import {
+  getWithTTL,
+  ONE_DAY_MS,
+  removeWithTTL,
+  setWithTTL,
+} from "@/lib/storageWithTTL";
 
 // ✅ IMPORT SOMENTE DE TIPO (não entra no bundle)
 import type { DocumentEntries } from "@/components/license-request/Step2Documents";
 
 const STORAGE_KEY = "license_request_step1";
+const STORAGE_KEY_STEP2 = "license_request_step2";
 const STORAGE_KEY_STEP3 = "license_request_step3";
 
 const EMPTY_STEP1: Step1Data = {
@@ -28,12 +36,19 @@ const EMPTY_STEP1: Step1Data = {
   degree: "",
   shift: "",
   bloodType: "",
-  bus: "",
 };
 
 const EMPTY_STEP3: Step3Data = {
   selections: [],
 };
+
+interface PersistedDocumentEntry {
+  name: string;
+  type: string;
+  dataUrl: string;
+}
+
+type PersistedStep2 = Record<string, PersistedDocumentEntry | null>;
 
 // ✅ LAZY LOAD REAL (resolve o problema do TensorFlow)
 const Step2Documents = dynamic(
@@ -59,6 +74,71 @@ function makeEmptyEntries(): DocumentEntries {
   );
 }
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Falha ao ler arquivo"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function serializeDocumentEntries(
+  entries: DocumentEntries
+): Promise<PersistedStep2> {
+  const serialized: PersistedStep2 = {};
+
+  for (const doc of LICENSE_DOCUMENTS) {
+    const entry = entries[doc.photoType];
+    const source = entry?.file ?? null;
+
+    if (!source) {
+      serialized[doc.photoType] = null;
+      continue;
+    }
+
+    const dataUrl = await fileToDataUrl(source);
+    serialized[doc.photoType] = {
+      name: source.name,
+      type: source.type,
+      dataUrl,
+    };
+  }
+
+  return serialized;
+}
+
+function dataUrlToFile(dataUrl: string, fileName: string, type: string): File {
+  const commaIndex = dataUrl.indexOf(",");
+  const base64 = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : "";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return new File([bytes], fileName, { type });
+}
+
+function deserializeDocumentEntries(data: PersistedStep2): DocumentEntries {
+  const hydrated = makeEmptyEntries();
+
+  for (const doc of LICENSE_DOCUMENTS) {
+    const persisted = data[doc.photoType];
+    if (!persisted) continue;
+
+    const file = dataUrlToFile(persisted.dataUrl, persisted.name, persisted.type);
+    hydrated[doc.photoType] = {
+      file,
+      previewUrl: file.type.startsWith("image/") ? persisted.dataUrl : "",
+      result: null,
+    };
+  }
+
+  return hydrated;
+}
+
 export default function RequestLicensePage() {
   const router = useRouter();
 
@@ -72,23 +152,20 @@ export default function RequestLicensePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const savedStep1 = localStorage.getItem(STORAGE_KEY);
-    if (savedStep1) {
-      try {
-        setStep1(JSON.parse(savedStep1));
-      } catch {}
-    }
+    const savedStep1 = getWithTTL<Step1Data>(STORAGE_KEY, ONE_DAY_MS);
+    if (savedStep1) setStep1(savedStep1);
 
-    const savedStep3 = localStorage.getItem(STORAGE_KEY_STEP3);
-    if (savedStep3) {
-      try {
-        setStep3(JSON.parse(savedStep3));
-      } catch {}
+    const savedStep3 = getWithTTL<Step3Data>(STORAGE_KEY_STEP3, ONE_DAY_MS);
+    if (savedStep3) setStep3(savedStep3);
+
+    const savedStep2 = getWithTTL<PersistedStep2>(STORAGE_KEY_STEP2, ONE_DAY_MS);
+    if (savedStep2) {
+      setDocumentEntries(deserializeDocumentEntries(savedStep2));
     }
   }, []);
 
   const handleContinueFromStep1 = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(step1));
+    setWithTTL(STORAGE_KEY, step1);
     setStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -98,8 +175,12 @@ export default function RequestLicensePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleContinueFromStep2 = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(step1));
+  const handleContinueFromStep2 = async () => {
+    setWithTTL(STORAGE_KEY, step1);
+
+    const serialized = await serializeDocumentEntries(documentEntries);
+    setWithTTL(STORAGE_KEY_STEP2, serialized);
+
     setStep(3);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -114,42 +195,48 @@ export default function RequestLicensePage() {
     setError("");
 
     try {
-      localStorage.setItem(STORAGE_KEY_STEP3, JSON.stringify(step3));
+      setWithTTL(STORAGE_KEY_STEP3, step3);
 
-      // 1. Dados acadêmicos
-      await api.patch("/student/me", {
-        institution: step1.institution,
-        degree: step1.degree,
-        shift: step1.shift,
-        bloodType: step1.bloodType,
-        bus: step1.bus,
-      });
+      const formData = new FormData();
 
-      // 2. Documentos
+      const appendIfFilled = (key: string, value: string) => {
+        const normalized = value.trim();
+        if (normalized.length > 0) {
+          formData.append(key, normalized);
+        }
+      };
+
+      appendIfFilled("institution", step1.institution);
+      appendIfFilled("degree", step1.degree);
+      appendIfFilled("shift", step1.shift);
+      appendIfFilled("bloodType", step1.bloodType);
+      formData.append("schedule", JSON.stringify(step3.selections));
+
       for (const doc of LICENSE_DOCUMENTS) {
         const entry = documentEntries[doc.photoType];
-
         const blob = entry?.result?.processedBlob ?? entry?.file;
         if (!blob) continue;
 
-        const formData = new FormData();
-        formData.append("photoType", doc.photoType);
-        formData.append(
-          "photo",
-          blob,
-          entry?.file?.name ?? `${doc.photoType}.jpg`
-        );
+        const fallbackName = blob.type === "image/jpeg"
+          ? `${doc.photoType}.jpg`
+          : `${doc.photoType}.pdf`;
 
-        await api.postForm("/image/me", formData);
+        const uploadFileName = blob.type === "image/jpeg"
+          ? (entry?.file?.name?.replace(/\.[^.]+$/, "") || doc.photoType) + ".jpg"
+          : entry?.file?.name ?? fallbackName;
+
+        formData.append(
+          doc.photoType,
+          blob,
+          uploadFileName
+        );
       }
 
-      // 3. Grade
-      await api.post("/student/schedule", {
-        selections: step3.selections,
-      });
+      await api.postForm("/student/me/license-submit", formData);
 
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(STORAGE_KEY_STEP3);
+      removeWithTTL(STORAGE_KEY);
+      removeWithTTL(STORAGE_KEY_STEP2);
+      removeWithTTL(STORAGE_KEY_STEP3);
 
       router.push("/dashboard?requested=true");
     } catch (err: unknown) {
@@ -178,8 +265,8 @@ export default function RequestLicensePage() {
         <ThemeToggle className="text-on-surface-variant hover:bg-surface-container-low" />
       </header>
 
-      <main className="pt-20 pb-10 px-5 max-w-lg mx-auto">
-        <StepIndicator current={step} />
+      <main className="pt-20 pb-28 px-5 max-w-lg mx-auto">
+        <StepIndicator currentStep={step} />
 
         {error && (
           <div className="bg-error-container border border-error-border text-error text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
@@ -215,6 +302,46 @@ export default function RequestLicensePage() {
           />
         )}
       </main>
+
+      {step === 1 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 px-6 pb-8 pt-4 flex justify-center bg-gradient-to-t from-surface via-surface/90 to-transparent">
+          <Button
+            type="submit"
+            form="license-step1"
+            variant="primary"
+            size="lg"
+            icon={ArrowRight}
+            className="w-3/4 max-w-xs"
+          >
+            Continuar
+          </Button>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 px-6 pb-8 pt-6 flex items-center gap-3 bg-linear-to-t from-surface via-surface/90 to-transparent">
+          <button
+            type="button"
+            onClick={handleBackFromStep3}
+            disabled={submitting}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container rounded-lg transition-all disabled:opacity-40"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </button>
+          <Button
+            variant="primary"
+            size="lg"
+            className="flex-1"
+            loading={submitting}
+            disabled={step3.selections.length === 0 || submitting}
+            icon={Send}
+            onClick={handleFinalSubmit}
+          >
+            Finalizar
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

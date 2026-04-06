@@ -69,7 +69,7 @@ function LicenseStatusCardInner() {
             </p>
           </div>
           <div className="bg-surface-container-high rounded-full" style={{ padding: "10px" }}>
-            <Hourglass className="w-6 h-6 text-primary" />
+            <Hourglass className="text-primary" size={24} />
           </div>
         </div>
       );
@@ -96,7 +96,7 @@ function LicenseStatusCardInner() {
           </p>
         </div>
         <div className="bg-black/10 rounded-full" style={{ padding: "10px" }}>
-          <CreditCard className="w-6 h-6 text-white" />
+          <CreditCard className="text-white" size={24} />
         </div>
       </Link>
     );
@@ -137,7 +137,7 @@ function LicenseStatusCardInner() {
         </p>
       </div>
       <div className="bg-surface-container-lowest/10 rounded-full" style={{ padding: "10px", position: "relative", zIndex: 10 }}>
-        <QrCode className="w-6 h-6 text-white" />
+        <QrCode className="text-white" size={24} />
       </div>
     </Link>
   );

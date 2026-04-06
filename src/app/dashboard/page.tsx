@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { BusFront } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useLicense } from "@/hooks/useLicense";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardGreeting from "@/components/dashboard/DashboardGreeting";
 import ActionCard from "@/components/dashboard/ActionCard";
@@ -13,6 +14,7 @@ import { DASHBOARD_ACTIONS } from "@/constants/dashboard-actions";
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { hasLicense } = useLicense();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.push("/login");
@@ -33,7 +35,11 @@ export default function DashboardPage() {
         <nav className="flex flex-col gap-4 flex-1">
           <LicenseActionCard />
           {DASHBOARD_ACTIONS.map((action) => (
-            <ActionCard key={action.href} action={action} />
+            <ActionCard
+              key={action.href}
+              action={action}
+              disabled={action.requiresLicense === true && !hasLicense}
+            />
           ))}
         </nav>
 

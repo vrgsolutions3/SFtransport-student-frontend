@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { api } from "@/lib/api";
-import { ArrowLeft, BadgeCheck, Loader2, School, Save, UserRound } from "lucide-react";
+import { ArrowLeft, BadgeCheck, LoaderCircle, Save, School, User, UserRound } from "lucide-react";
 
 const SHIFT_OPTIONS = [
   { value: "Manhã", label: "Manhã" },
@@ -26,7 +26,6 @@ interface StudentProfile {
   degree: string;
   shift: string;
   bloodType: string;
-  bus: string;
 }
 
 export default function ProfilePage() {
@@ -42,7 +41,6 @@ export default function ProfilePage() {
     degree: "",
     shift: "",
     bloodType: "",
-    bus: "",
   });
 
   useEffect(() => {
@@ -54,7 +52,6 @@ export default function ProfilePage() {
         degree: data.degree ?? "",
         shift: data.shift ?? "",
         bloodType: data.bloodType ?? "",
-        bus: data.bus ?? "",
       }))
       .catch(() => router.push("/login"))
       .finally(() => setLoading(false));
@@ -70,7 +67,6 @@ export default function ProfilePage() {
         degree: formData.degree,
         shift: formData.shift,
         bloodType: formData.bloodType,
-        bus: formData.bus,
       });
       setSuccess(true);
     } catch (err: unknown) {
@@ -84,7 +80,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-surface">
-        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+        <LoaderCircle className="text-primary animate-spin" size={44} />
       </div>
     );
   }
@@ -97,7 +93,7 @@ export default function ProfilePage() {
           onClick={() => router.back()}
           className="p-2 rounded-full hover:bg-surface-container-low transition-colors active:scale-95"
         >
-          <ArrowLeft className="w-5 h-5 text-on-surface" />
+          <ArrowLeft className="text-on-surface" size={20} />
         </button>
         <h1 className="font-headline font-bold text-on-surface text-lg flex-1">Meu Perfil</h1>
         <ThemeToggle className="text-on-surface-variant hover:bg-surface-container-low" />
@@ -106,12 +102,12 @@ export default function ProfilePage() {
       <main className="pt-20 pb-10 px-5 max-w-lg mx-auto">
         {/* Info do usuário */}
         <div className="bg-primary rounded-2xl p-5 mb-6 flex items-center gap-4">
-          <div className="w-14 h-14 bg-surface-container-lowest/20 rounded-full flex items-center justify-center flex-shrink-0">
+
+          <div className="w-14 h-14 bg-surface-container-lowest/20 rounded-full flex items-center justify-center shrink-0">
             <UserRound className="w-8 h-8 text-white" />
           </div>
           <div>
             <p className="text-white font-bold text-base leading-tight">{formData.name}</p>
-            <p className="text-white/70 text-sm">{formData.email}</p>
           </div>
         </div>
 

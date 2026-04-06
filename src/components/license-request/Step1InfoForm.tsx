@@ -1,17 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { useState, useRef, useEffect } from "react";
 import { AutocompleteInput } from "@/components/ui/AutocompleteInput";
 import { useInstitutionAutocomplete } from "@/hooks/useInstitutionAutocomplete";
-import { ArrowRight, BookOpenText, ChevronDown, Clock3, Droplets, School } from "lucide-react";
+import { BookOpenText, ChevronDown, Droplets, School } from "lucide-react";
 
 export interface Step1Data {
   institution: string;
   degree: string;
   shift: string;
   bloodType: string;
-  bus: string;
 }
 
 interface Step1InfoFormProps {
@@ -40,6 +38,18 @@ export default function Step1InfoForm({
   const [touched, setTouched] = useState<
     Partial<Record<keyof Step1Data, boolean>>
   >({});
+  const [bloodTypeOpen, setBloodTypeOpen] = useState(false);
+  const bloodTypeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!bloodTypeRef.current?.contains(e.target as Node)) {
+        setBloodTypeOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const {
     institutionOptions,
@@ -102,7 +112,8 @@ export default function Step1InfoForm({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleContinue = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (validateForm()) {
       onContinue();
     }
@@ -115,7 +126,7 @@ export default function Step1InfoForm({
   };
 
   return (
-    <div className="space-y-5">
+    <form id="license-step1" onSubmit={handleSubmit} className="space-y-5 pb-10">
       <div>
         <AutocompleteInput
           label="Instituição de Ensino"
@@ -150,54 +161,29 @@ export default function Step1InfoForm({
         />
       </div>
 
-      {/* Turno - Select estilizado */}
+      {/* Turno - Segmented control */}
       <div className="space-y-2">
-        <label
-          htmlFor="shift"
-          className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1"
-        >
+        <label className="text-sm font-medium text-on-surface-variant ml-1">
           Turno <span className="text-error">*</span>
         </label>
         <div
-          className={`relative group w-full min-w-0 flex items-center bg-surface-container-low border-2 rounded-xl transition-all duration-150 ${
-            touched.shift && errors.shift
-              ? "border-error"
-              : "border-outline hover:border-on-surface-variant focus-within:border-primary focus-within:shadow-[0_0_0_4px_var(--shadow-primary-soft)]"
-          }`}
+          className={`flex h-12 rounded-xl border overflow-hidden transition-all duration-150
+            ${touched.shift && errors.shift ? "border-error" : "border-outline-variant"}`}
         >
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <Clock3
-              className={`w-5 h-5 transition-colors duration-150 group-focus-within:text-primary ${
-                touched.shift && errors.shift ? "text-error" : "text-on-surface-variant"
-              }`}
-            />
-          </div>
-
-          <select
-            id="shift"
-            value={data.shift}
-            onChange={(e) => {
-              updateFormData({ shift: e.target.value });
-              markAsTouched("shift");
-            }}
-            onBlur={() => markAsTouched("shift")}
-            aria-required="true"
-            aria-invalid={touched.shift && !!errors.shift}
-            className="w-full min-w-0 h-14 bg-transparent pl-12 pr-11 text-sm sm:text-base text-on-surface outline-none appearance-none"
-          >
-            <option value="" disabled>
-              Selecione o turno
-            </option>
-            {SHIFT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-
-          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-            <ChevronDown className="w-5 h-5 text-on-surface-variant" />
-          </div>
+          {SHIFT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { updateFormData({ shift: opt.value }); markAsTouched("shift"); }}
+              className={`flex-1 text-sm font-medium transition-all duration-150
+                ${data.shift === opt.value
+                  ? "bg-primary text-on-primary"
+                  : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
+                }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
         {touched.shift && errors.shift && (
           <p className="text-xs text-error mt-1 ml-1" role="alert">
@@ -206,54 +192,48 @@ export default function Step1InfoForm({
         )}
       </div>
 
-      {/* Tipo Sanguíneo - Select estilizado */}
+      {/* Tipo Sanguíneo - Dropdown customizado */}
       <div className="space-y-2">
-        <label
-          htmlFor="bloodType"
-          className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1"
-        >
+        <label className="text-sm font-medium text-on-surface-variant ml-1">
           Tipo Sanguíneo <span className="text-error">*</span>
         </label>
-        <div
-          className={`relative group w-full min-w-0 flex items-center bg-surface-container-low border-2 rounded-xl transition-all duration-150 ${
-            touched.bloodType && errors.bloodType
-              ? "border-error"
-              : "border-outline hover:border-on-surface-variant focus-within:border-primary focus-within:shadow-[0_0_0_4px_var(--shadow-primary-soft)]"
-          }`}
-        >
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <Droplets
-              className={`w-5 h-5 transition-colors duration-150 group-focus-within:text-primary ${
-                touched.bloodType && errors.bloodType ? "text-error" : "text-on-surface-variant"
+        <div ref={bloodTypeRef} className="relative">
+          <button
+            type="button"
+            onClick={() => { setBloodTypeOpen((prev) => !prev); markAsTouched("bloodType"); }}
+            className={`w-full h-12 flex items-center gap-3 px-4 rounded-xl border-2 bg-surface-container-low text-sm font-medium transition-all duration-150
+              ${touched.bloodType && errors.bloodType
+                ? "border-error"
+                : "border-outline hover:border-on-surface-variant"
               }`}
-            />
-          </div>
-
-          <select
-            id="bloodType"
-            value={data.bloodType}
-            onChange={(e) => {
-              updateFormData({ bloodType: e.target.value });
-              markAsTouched("bloodType");
-            }}
-            onBlur={() => markAsTouched("bloodType")}
-            aria-required="true"
-            aria-invalid={touched.bloodType && !!errors.bloodType}
-            className="w-full min-w-0 h-14 bg-transparent pl-12 pr-11 text-sm sm:text-base text-on-surface outline-none appearance-none"
           >
-            <option value="" disabled>
-              Selecione o tipo sanguíneo
-            </option>
-            {BLOOD_TYPE_OPTIONS.map((bt) => (
-              <option key={bt} value={bt}>
-                {bt}
-              </option>
-            ))}
-          </select>
+            <Droplets className={`w-5 h-5 shrink-0 ${touched.bloodType && errors.bloodType ? "text-error" : "text-on-surface-variant"}`} />
+            <span className={`flex-1 text-left ${data.bloodType ? "text-on-surface" : "text-on-surface-muted"}`}>
+              {data.bloodType || "Selecione o tipo sanguíneo"}
+            </span>
+            <ChevronDown className={`w-4 h-4 shrink-0 text-on-surface-variant transition-transform duration-150 ${bloodTypeOpen ? "rotate-180" : ""}`} />
+          </button>
 
-          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-            <ChevronDown className="w-5 h-5 text-on-surface-variant" />
-          </div>
+          {bloodTypeOpen && (
+            <div className="absolute z-50 w-full mt-1 bg-surface-container-low rounded-xl shadow-lg border border-outline-variant/30 p-2">
+              <div className="grid grid-cols-2 gap-1">
+                {BLOOD_TYPE_OPTIONS.map((bt) => (
+                  <button
+                    key={bt}
+                    type="button"
+                    onClick={() => { updateFormData({ bloodType: bt }); markAsTouched("bloodType"); setBloodTypeOpen(false); }}
+                    className={`p-2.5 text-sm text-center rounded-lg transition-colors duration-150
+                      ${data.bloodType === bt
+                        ? "bg-primary-fixed text-primary font-bold"
+                        : "text-on-surface hover:bg-surface-container-high"
+                      }`}
+                  >
+                    {bt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         {touched.bloodType && errors.bloodType && (
           <p className="text-xs text-error mt-1 ml-1" role="alert">
@@ -262,16 +242,6 @@ export default function Step1InfoForm({
         )}
       </div>
 
-      <Button
-        type="button"
-        variant="primary"
-        size="lg"
-        fullWidth
-        onClick={handleContinue}
-        icon={ArrowRight}
-      >
-        Continuar
-      </Button>
-    </div>
+    </form>
   );
 }

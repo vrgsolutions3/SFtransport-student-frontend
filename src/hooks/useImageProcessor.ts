@@ -21,6 +21,31 @@ export interface ImageProcessorState {
   removeEntry: (index: number) => void;
 }
 
+async function createPngPreviewUrl(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    bitmap.close();
+    throw new Error("Falha ao criar contexto de preview");
+  }
+
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((result) => {
+      if (result) resolve(result);
+      else reject(new Error("Falha ao gerar PNG de preview"));
+    }, "image/png");
+  });
+
+  return URL.createObjectURL(blob);
+}
+
 async function runPipeline(
   file: File,
   model: NSFWModel | null,
@@ -119,15 +144,58 @@ export function useImageProcessor(model: NSFWModel | null, slotsCount: number): 
     const isPdf = file.type === "application/pdf";
     const newEntry: ImageEntry = {
       file,
-      previewUrl: isPdf ? "" : URL.createObjectURL(file),
+      previewUrl: "",
       result: null,
     };
+
     setEntries((prev) => {
       const next = [...prev];
       if (next[index]?.previewUrl) URL.revokeObjectURL(next[index]!.previewUrl);
       next[index] = newEntry;
       return next;
     });
+
+    if (!isPdf) {
+      createPngPreviewUrl(file)
+        .then((pngPreviewUrl) => {
+          setEntries((prev) => {
+            if (prev[index]?.file !== file) {
+              URL.revokeObjectURL(pngPreviewUrl);
+              return prev;
+            }
+
+            const currentPreviewUrl = prev[index]?.previewUrl;
+            if (currentPreviewUrl) URL.revokeObjectURL(currentPreviewUrl);
+
+            const next = [...prev];
+            next[index] = {
+              ...prev[index]!,
+              previewUrl: pngPreviewUrl,
+            };
+            return next;
+          });
+        })
+        .catch(() => {
+          const fallbackUrl = URL.createObjectURL(file);
+          setEntries((prev) => {
+            if (prev[index]?.file !== file) {
+              URL.revokeObjectURL(fallbackUrl);
+              return prev;
+            }
+
+            const currentPreviewUrl = prev[index]?.previewUrl;
+            if (currentPreviewUrl) URL.revokeObjectURL(currentPreviewUrl);
+
+            const next = [...prev];
+            next[index] = {
+              ...prev[index]!,
+              previewUrl: fallbackUrl,
+            };
+            return next;
+          });
+        });
+    }
+
     processEntry(index, newEntry, validateRatio);
   }, [processEntry]);
 

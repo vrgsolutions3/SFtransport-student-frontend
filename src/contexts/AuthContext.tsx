@@ -48,6 +48,7 @@ interface AuthContextValue extends AuthState {
     email: string;
     password: string;
     telephone: string;
+    cpf: string;
   }) => Promise<{ success: true; isInstitutional: boolean } | { success: false; error: string }>;
   verifyEmail: (
     email: string,
@@ -199,6 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: string;
       password: string;
       telephone: string;
+      cpf: string;
     }): Promise<
       { success: true; isInstitutional: boolean } | { success: false; error: string }
     > => {
