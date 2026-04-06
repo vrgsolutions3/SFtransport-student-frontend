@@ -25,7 +25,6 @@ import {
   setWithTTL,
 } from "@/lib/storageWithTTL";
 
-// ✅ IMPORT SOMENTE DE TIPO (não entra no bundle)
 import type { DocumentEntries } from "@/components/license-request/Step2Documents";
 
 const STORAGE_KEY = "license_request_step1";
@@ -51,7 +50,6 @@ interface PersistedDocumentEntry {
 
 type PersistedStep2 = Record<string, PersistedDocumentEntry | null>;
 
-// ✅ LAZY LOAD REAL (resolve o problema do TensorFlow)
 const Step2Documents = dynamic(
   () => import("@/components/license-request/Step2Documents"),
   {
@@ -306,7 +304,7 @@ export default function RequestLicensePage() {
       </main>
 
       {step === 1 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 px-6 pb-8 pt-4 flex justify-center bg-gradient-to-t from-surface via-surface/90 to-transparent">
+        <div className="fixed bottom-0 left-0 right-0 z-40 px-6 pb-8 pt-4 flex justify-center bg-linear-to-t from-surface via-surface/90 to-transparent">
           <Button
             type="submit"
             form="license-step1"
