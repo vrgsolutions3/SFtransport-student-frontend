@@ -1,23 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { api } from "@/lib/api";
-import { ArrowLeft, CheckCircle, LoaderCircle, Save, School, User } from "lucide-react";
-
-const SHIFT_OPTIONS = [
-  { value: "Manhã", label: "Manhã" },
-  { value: "Tarde", label: "Tarde" },
-  { value: "Noite", label: "Noite" },
-  { value: "Integral", label: "Integral" },
-];
-
-const BLOOD_TYPE_OPTIONS = [
-  "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-",
-];
+import { apiClient } from "@/lib/apiClient";
+import { ArrowLeft, Camera, ImageIcon, Trash2 } from "lucide-react";
 
 interface StudentProfile {
   name: string;
@@ -26,64 +13,112 @@ interface StudentProfile {
   degree: string;
   shift: string;
   bloodType: string;
+  institution: string;
+  photo: string | null;
+  schedule: { day: string; period: string }[];
+}
+
+const DAY_LABELS: Record<string, string> = {
+  SEG: "Segunda",
+  TER: "Terça",
+  QUA: "Quarta",
+  QUI: "Quinta",
+  SEX: "Sexta",
+};
+
+function formatPhone(digits: string): string {
+  if (digits.length === 0) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
 }
 
 export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
-  const [formData, setFormData] = useState<StudentProfile>({
-    name: "",
-    email: "",
-    telephone: "",
-    degree: "",
-    shift: "",
-    bloodType: "",
-  });
+  const [profile, setProfile] = useState<StudentProfile | null>(null);
+  const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
+
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    api.get<StudentProfile>("/student/me")
-      .then((data) => setFormData({
-        name: data.name ?? "",
-        email: data.email ?? "",
-        telephone: data.telephone ?? "",
-        degree: data.degree ?? "",
-        shift: data.shift ?? "",
-        bloodType: data.bloodType ?? "",
-      }))
+    apiClient
+      .get<StudentProfile>("/student/me")
+      .then((data: StudentProfile) =>
+        setProfile({
+          name: data.name ?? "",
+          email: data.email ?? "",
+          telephone: data.telephone ?? "",
+          degree: data.degree ?? "",
+          shift: data.shift ?? "",
+          bloodType: data.bloodType ?? "",
+          institution: data.institution ?? "",
+          photo: data.photo ?? null,
+          schedule: data.schedule ?? [],
+        })
+      )
       .catch(() => router.push("/login"))
       .finally(() => setLoading(false));
   }, [router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-    setSuccess(false);
-    try {
-      await api.patch("/student/me", {
-        degree: formData.degree,
-        shift: formData.shift,
-        bloodType: formData.bloodType,
-      });
-      setSuccess(true);
-    } catch (err: unknown) {
-      const e = err as { message?: string };
-      setError(e?.message ?? "Erro ao salvar");
-    } finally {
-      setSaving(false);
-    }
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoSheetOpen(false);
+    const formData = new FormData();
+    formData.append("photo", file);
+    const updated = await apiClient.patchForm<StudentProfile>("/student/me/photo", formData);
+    setProfile((prev) => (prev ? { ...prev, photo: updated.photo } : prev));
+    e.target.value = "";
+  };
+
+  const handleRemovePhoto = async () => {
+    setPhotoSheetOpen(false);
+    await apiClient.delete("/student/me/photo");
+    setProfile((prev) => (prev ? { ...prev, photo: null } : prev));
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-surface">
-        <LoaderCircle className="text-primary animate-spin" size={44} />
+      <div className="animate-pulse space-y-4 pt-20 px-5">
+        <div className="bg-surface-container-low rounded-2xl h-40" />
+        <div className="bg-surface-container-low rounded-2xl h-48" />
+        <div className="bg-surface-container-low rounded-2xl h-32" />
       </div>
     );
   }
+
+  if (!profile) return null;
+
+  // Agrupa horários por dia
+  const scheduleByDay = profile.schedule.reduce<Record<string, string[]>>(
+    (acc, { day, period }) => {
+      if (!acc[day]) acc[day] = [];
+      acc[day].push(period);
+      return acc;
+    },
+    {}
+  );
+
+  const academicRows = [
+    { label: "Instituição", value: profile.institution || "Não informado" },
+    { label: "Curso", value: profile.degree || "Não informado" },
+    { label: "Turno", value: profile.shift || "Não informado" },
+    { label: "Tipo Sanguíneo", value: profile.bloodType || "Não informado" },
+    { label: "Telefone", value: profile.telephone ? formatPhone(profile.telephone.replace(/\D/g, "")) : "Não informado" },
+  ];
 
   return (
     <div className="min-h-screen bg-surface">
@@ -95,107 +130,153 @@ export default function ProfilePage() {
         >
           <ArrowLeft className="text-on-surface" size={20} />
         </button>
-        <h1 className="font-headline font-bold text-on-surface text-lg flex-1">Meu Perfil</h1>
+        <h1 className="font-headline font-bold text-on-surface text-lg flex-1">
+          Meu Perfil
+        </h1>
         <ThemeToggle className="text-on-surface-variant hover:bg-surface-container-low" />
       </header>
 
       <main className="pt-20 pb-10 px-5 max-w-lg mx-auto">
-        {/* Info do usuário */}
-        <div className="bg-primary rounded-2xl p-5 mb-6 flex items-center gap-4">
-          <div className="w-14 h-14 bg-surface-container-lowest/20 rounded-full flex items-center justify-center shrink-0">
-            <User className="text-white" size={28} />
+        {/* Card de perfil */}
+        <div className="bg-primary rounded-2xl p-5 mb-6">
+          <div className="w-20 h-20 rounded-full bg-white/20 border-2 border-white/30 flex items-center justify-center overflow-hidden mx-auto mb-3">
+            {profile.photo ? (
+              <img
+                src={profile.photo}
+                alt="Foto de perfil"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-2xl font-bold text-white">
+                {getInitials(profile.name)}
+              </span>
+            )}
           </div>
-          <div>
-            <p className="text-white font-bold text-base leading-tight">{formData.name}</p>
-            <p className="text-white/70 text-sm">{formData.email}</p>
+          <p className="text-white font-bold text-lg text-center">
+            {profile.name}
+          </p>
+          <p className="text-white/70 text-sm text-center">{profile.email}</p>
+          <div className="flex justify-center mt-2">
+            <button
+              onClick={() => setPhotoSheetOpen(true)}
+              className="text-white/80 text-xs underline"
+            >
+              Alterar foto
+            </button>
           </div>
         </div>
 
-        {/* Feedback */}
-        {success && (
-          <div className="bg-success-container border border-success-border text-on-success text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
-            <CheckCircle size={16} />
-            Perfil atualizado com sucesso!
-          </div>
-        )}
-        {error && (
-          <div className="bg-error-container border border-error-border text-error text-sm rounded-xl px-4 py-3 mb-5">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+        {/* Dados Acadêmicos */}
+        <div className="bg-surface-container-low rounded-2xl p-5 space-y-4 mb-4">
+          <p className="text-sm font-medium text-on-surface-variant mb-3">
             Dados Acadêmicos
           </p>
+          {academicRows.map((row, i) => (
+            <div key={row.label}>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-on-surface-variant">
+                  {row.label}
+                </span>
+                <span className="text-sm font-medium text-on-surface">
+                  {row.value}
+                </span>
+              </div>
+              {i < academicRows.length - 1 && (
+                <hr className="border-outline-variant/30 mt-4" />
+              )}
+            </div>
+          ))}
+        </div>
 
-          <Input
-            label="Curso"
-            type="text"
-            icon={School}
-            placeholder="Ex: Engenharia de Software"
-            value={formData.degree}
-            onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
-          />
-
-          {/* Turno */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1">
-              Turno
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {SHIFT_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, shift: opt.value })}
-                  className={`h-12 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
-                    formData.shift === opt.value
-                      ? "bg-primary text-white shadow-md shadow-primary/20"
-                      : "bg-surface-container-low text-on-surface-variant"
-                  }`}
-                >
-                  {opt.label}
-                </button>
+        {/* Grade de Horários */}
+        <div className="bg-surface-container-low rounded-2xl p-5 mb-4">
+          <p className="text-sm font-medium text-on-surface-variant mb-3">
+            Grade de Horários
+          </p>
+          {profile.schedule.length === 0 ? (
+            <p className="text-sm text-on-surface-muted text-center py-4">
+              Nenhum horário cadastrado
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {Object.entries(scheduleByDay).map(([day, periods]) => (
+                <div key={day} className="flex items-center justify-between py-2">
+                  <span className="text-sm text-on-surface">
+                    {DAY_LABELS[day] ?? day}
+                  </span>
+                  <div className="flex gap-1.5 flex-wrap justify-end">
+                    {periods.map((period) => (
+                      <span
+                        key={period}
+                        className="bg-primary/10 text-primary text-xs font-medium px-2.5 py-1 rounded-full"
+                      >
+                        {period}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
-          </div>
-
-          {/* Tipo sanguíneo */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1">
-              Tipo Sanguíneo
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              {BLOOD_TYPE_OPTIONS.map((bt) => (
-                <button
-                  key={bt}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, bloodType: bt })}
-                  className={`h-12 rounded-xl text-sm font-bold transition-all active:scale-95 ${
-                    formData.bloodType === bt
-                      ? "bg-primary text-white shadow-md shadow-primary/20"
-                      : "bg-surface-container-low text-on-surface-variant"
-                  }`}
-                >
-                  {bt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            fullWidth
-            loading={saving}
-            icon={Save}
-          >
-            Salvar Alterações
-          </Button>
-        </form>
+          )}
+        </div>
       </main>
+
+      {/* Bottom sheet de foto */}
+      {photoSheetOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50"
+            onClick={() => setPhotoSheetOpen(false)}
+          />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-3xl px-6 pt-4 pb-10">
+            <p className="text-base font-bold text-on-surface mb-4">
+              Foto de perfil
+            </p>
+            <div className="space-y-1">
+              <div
+                className="flex items-center gap-3 py-3 text-sm font-medium text-on-surface cursor-pointer hover:bg-surface-container rounded-xl px-2 transition-all"
+                onClick={() => cameraRef.current?.click()}
+              >
+                <Camera className="w-5 h-5 shrink-0" />
+                Usar câmera
+              </div>
+              <div
+                className="flex items-center gap-3 py-3 text-sm font-medium text-on-surface cursor-pointer hover:bg-surface-container rounded-xl px-2 transition-all"
+                onClick={() => galleryRef.current?.click()}
+              >
+                <ImageIcon className="w-5 h-5 shrink-0" />
+                Escolher da galeria
+              </div>
+              {profile.photo !== null && (
+                <div
+                  className="flex items-center gap-3 py-3 text-sm font-medium text-error cursor-pointer hover:bg-surface-container rounded-xl px-2 transition-all"
+                  onClick={handleRemovePhoto}
+                >
+                  <Trash2 className="w-5 h-5 shrink-0" />
+                  Remover foto
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Inputs hidden */}
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/jpeg,image/png"
+        capture="environment"
+        className="hidden"
+        onChange={handlePhotoChange}
+      />
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/jpeg,image/png"
+        className="hidden"
+        onChange={handlePhotoChange}
+      />
     </div>
   );
 }

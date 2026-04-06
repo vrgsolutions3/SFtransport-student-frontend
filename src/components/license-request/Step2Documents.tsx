@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useRef } from "react";
-import { ArrowLeft, RefreshCw, ShieldCheck, ShieldAlert } from "lucide-react";
+import { ArrowLeft, FileCheck, RefreshCw, ShieldCheck, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import DocumentUpload from "./DocumentUpload";
 import { LICENSE_DOCUMENTS } from "@/constants/license-documents";
@@ -69,9 +69,10 @@ function ProgressBar({
   const pct = total === 0 ? 0 : Math.round((okCount / total) * 100);
 
   return (
-    <div className="space-y-1.5">
+    <div className="bg-surface-container-low rounded-xl px-4 py-3 space-y-2 border border-outline-variant/40">
       <div className="flex items-center justify-between text-xs text-on-surface-variant">
-        <span>
+        <span className="flex items-center gap-1.5">
+          <FileCheck className="w-3.5 h-3.5 shrink-0" />
           {okCount} de {total} documento{total !== 1 ? "s" : ""} verificado{okCount !== 1 ? "s" : ""}
         </span>
         {isProcessing && (
@@ -143,7 +144,7 @@ export default function Step2Documents({
   const total = LICENSE_DOCUMENTS.length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-28">
       {/* Banner do modelo */}
       <ModelBanner status={nsfw.status} onRetry={nsfw.retry} />
 
@@ -164,30 +165,33 @@ export default function Step2Documents({
         ))}
       </div>
 
-      {/* Ações */}
-      <div className="flex gap-3 pt-4 border-t border-outline-variant">
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={isProcessing}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container rounded-lg transition-all disabled:opacity-40"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Voltar
-        </button>
+      {/* Ações — fixas no rodapé via portal no page.tsx */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 px-6 pb-8 pt-6 bg-linear-to-t from-surface via-surface/90 to-transparent">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={isProcessing}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container rounded-lg transition-all disabled:opacity-40"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </button>
 
-        <Button
-          variant="primary"
-          fullWidth
-          disabled={!allValid || isProcessing}
-          onClick={onContinue}
-        >
-          {allValid
-            ? "Continuar"
-            : isProcessing
-            ? "Verificando..."
-            : `Aguardando documentos (${okCount}/${total})`}
-        </Button>
+          <Button
+            variant="primary"
+            size="lg"
+            className="flex-1"
+            disabled={!allValid || isProcessing}
+            onClick={onContinue}
+          >
+            {allValid
+              ? "Continuar"
+              : isProcessing
+              ? "Verificando..."
+              : `Aguardando documentos (${okCount}/${total})`}
+          </Button>
+        </div>
       </div>
     </div>
   );
