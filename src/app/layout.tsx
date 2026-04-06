@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Manrope } from "next/font/google";
+import Script from "next/script";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
@@ -17,6 +18,9 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001"
+  ),
   title: "São Fidélis Transporte",
   description: "Sistema de transporte institucional para estudantes e servidores",
   manifest: "/manifest.json",
@@ -86,13 +90,13 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png" />
         
-        <script dangerouslySetInnerHTML={{ __html: `
-          try {
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`try {
             var t = localStorage.getItem('theme') ||
               (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             if (t === 'dark') document.documentElement.classList.add('dark');
-          } catch(e) {}
-        `}} />
+          } catch (e) {}`}
+        </Script>
       </head>
       <body
         className={`${inter.variable} ${manrope.variable} antialiased`}

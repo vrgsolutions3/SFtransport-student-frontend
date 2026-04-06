@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { api } from "@/lib/api";
-import { ArrowLeft, BadgeCheck, LoaderCircle, Save, School, User, UserRound } from "lucide-react";
+import { ArrowLeft, BadgeCheck, LoaderCircle, Save, School, UserRound } from "lucide-react";
 
 const SHIFT_OPTIONS = [
   { value: "Manhã", label: "Manhã" },

@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  useState,
   useRef,
+  useState,
   useEffect,
   KeyboardEvent,
   ChangeEvent,
@@ -40,21 +40,14 @@ export function AutocompleteInput({
 
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [inputValue, setInputValue] = useState(value);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const listboxRef = useRef<HTMLUListElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const filteredOptions = options.filter((opt) =>
-    opt.toLowerCase().includes(inputValue.toLowerCase()),
+    opt.toLowerCase().includes(value.toLowerCase()),
   );
-
-  useEffect(() => {
-    if (value !== inputValue) {
-      setInputValue(value);
-    }
-  }, [value]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -70,7 +63,6 @@ export function AutocompleteInput({
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setInputValue(newValue);
     onValueChange(newValue);
     setIsOpen(true);
     setActiveIndex(-1);
@@ -112,7 +104,6 @@ export function AutocompleteInput({
   };
 
   const handleSelectOption = (option: string) => {
-    setInputValue(option);
     onValueChange(option);
     setIsOpen(false);
     setActiveIndex(-1);
@@ -173,7 +164,7 @@ export function AutocompleteInput({
           id={id}
           ref={inputRef}
           type="text"
-          value={inputValue}
+          value={value}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={handleInputFocus}
@@ -214,7 +205,7 @@ export function AutocompleteInput({
       )}
 
       {/* Empty */}
-      {isOpen && filteredOptions.length === 0 && inputValue && (
+      {isOpen && filteredOptions.length === 0 && value && (
         <div className="absolute left-0 right-0 top-full z-50 mt-1 w-full max-w-full rounded-xl border border-outline-variant/30 bg-surface-container-low p-4 text-center text-on-surface-variant text-sm shadow-lg">
           Nenhuma opção encontrada
         </div>

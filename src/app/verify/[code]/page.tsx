@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { BusFront, CheckCircle, XCircle, AlertCircle, LoaderCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { API_BASE_URL } from "@/lib/apiClient";
 
 type VerifyResult =
   | { exists: false }
@@ -13,17 +14,15 @@ type PageState = "loading" | "valid" | "inactive" | "not_found" | "error";
 
 export default function VerifyPage() {
   const { code } = useParams<{ code: string }>();
+  const normalizedCode = typeof code === "string" ? code : "";
   const [state, setState] = useState<PageState>("loading");
 
   useEffect(() => {
-    if (!code) {
-      setState("not_found");
+    if (!normalizedCode) {
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-    fetch(`${apiUrl}/license/verify/${code}`)
+    fetch(`${API_BASE_URL}/license/verify/${normalizedCode}`)
       .then((res) => {
         if (!res.ok) throw new Error("network");
         return res.json() as Promise<VerifyResult>;
@@ -35,8 +34,10 @@ export default function VerifyPage() {
         }
         setState(data.valid ? "valid" : "inactive");
       })
-      .catch(() => setState("error"));
-  }, [code]);
+        .catch(() => setState("error"));
+      }, [normalizedCode]);
+
+      const viewState: PageState = normalizedCode ? state : "not_found";
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
@@ -54,11 +55,11 @@ export default function VerifyPage() {
       {/* Conteúdo */}
       <main className="flex-1 flex items-center justify-center px-5 py-12">
         <div className="w-full max-w-sm">
-          {state === "loading" && <LoadingState />}
-          {state === "valid" && <ValidState />}
-          {state === "inactive" && <InactiveState />}
-          {state === "not_found" && <NotFoundState />}
-          {state === "error" && <ErrorState />}
+          {viewState === "loading" && <LoadingState />}
+          {viewState === "valid" && <ValidState />}
+          {viewState === "inactive" && <InactiveState />}
+          {viewState === "not_found" && <NotFoundState />}
+          {viewState === "error" && <ErrorState />}
 
           <p className="text-center text-on-surface-variant mt-8" style={{ fontSize: "11px" }}>
             Prefeitura Municipal de São Fidélis · Sistema de Transporte Estudantil
