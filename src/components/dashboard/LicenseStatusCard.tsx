@@ -3,9 +3,10 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CreditCard, Hourglass, QrCode } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useLicense } from "@/hooks/useLicense";
 import { License } from "@/types/license";
+import { CreditCard, Hourglass, QrCode } from "lucide-react";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("pt-BR", {
@@ -34,7 +35,10 @@ function statusColor(status: License["status"]) {
 }
 
 function LicenseStatusCardInner() {
-  const { license, loading, hasLicense } = useLicense();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { license, loading, hasLicense } = useLicense({
+    enabled: isAuthenticated && !authLoading,
+  });
   const searchParams = useSearchParams();
   const justRequested = searchParams.get("requested") === "true";
 

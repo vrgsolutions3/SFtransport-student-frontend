@@ -1,15 +1,3 @@
-// ─────────────────────────────────────────────────────────────
-// contexts/AuthContext.tsx
-// AuthProvider + useAuth hook.
-//
-// Responsabilidades:
-//   - Recuperar sessão no mount via POST /auth/refresh
-//   - Manter access token em memória (nunca em localStorage)
-//   - Espelhar token em cookie comum (sinal para o middleware)
-//   - Expor login / logout / register / verifyEmail / resendCode
-//   - Injetar callbacks no apiClient (refresh, forceLogout, getToken)
-// ─────────────────────────────────────────────────────────────
-
 "use client";
 
 import {
@@ -17,19 +5,16 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
-import { configureApiClient, apiClient } from "@/lib/apiClient";
+import { usePathname, useRouter } from "next/navigation";
+import { configureApiClient, resetApiClientState } from "@/lib/apiClient";
 import type {
   AuthUser,
-  LoginResponse,
   RegisterResponse,
   MessageResponse,
+  SessionAuthResponse,
 } from "@/types/auth";
-
-// ── Tipos do contexto ─────────────────────────────────────────
 
 interface AuthState {
   user: AuthUser | null;
@@ -61,92 +46,79 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// ── Helpers de cookie comum (sinal para o middleware) ─────────
+const PUBLIC_PATHS = ["/login", "/register", "/verify-email", "/verify"];
 
-const ACCESS_COOKIE = "access_token";
-
-function setAccessCookie(token: string) {
-  document.cookie = `${ACCESS_COOKIE}=${token}; path=/; SameSite=Strict`;
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 }
 
-function clearAccessCookie() {
-  document.cookie = `${ACCESS_COOKIE}=; path=/; max-age=0; SameSite=Strict`;
-}
-
-// ── Provider ──────────────────────────────────────────────────
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+  bootstrapOnMount = true,
+}: {
+  children: React.ReactNode;
+  bootstrapOnMount?: boolean;
+}) {
   const router = useRouter();
-
-  // Token vive apenas em memória
-  const tokenRef = useRef<string | null>(null);
+  const pathname = usePathname();
 
   const [state, setState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
-    isLoading: true,
+    isLoading: bootstrapOnMount,
   });
 
-  // ── Salva token em memória + cookie comum ─────────────────
-  const saveToken = useCallback((token: string) => {
-    tokenRef.current = token;
-    setAccessCookie(token);
-  }, []);
-
-  // ── Limpa toda a sessão ───────────────────────────────────
   const clearSession = useCallback(() => {
-    tokenRef.current = null;
-    clearAccessCookie();
     setState({ user: null, isAuthenticated: false, isLoading: false });
   }, []);
 
-  // ── Callback de refresh (usado pela fila anti-401) ────────
-  const doRefresh = useCallback(async (): Promise<string> => {
-    const data = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-      {
-        method: "POST",
-        credentials: "include",
-      }
-    );
-
-    if (!data.ok) throw new Error("Refresh falhou");
-
-    const json: LoginResponse = await data.json();
-    saveToken(json.access_token);
-    setState({
-      user: json.user,
-      isAuthenticated: true,
-      isLoading: false,
-    });
-    return json.access_token;
-  }, [saveToken]);
-
-  // ── Força logout (chamado pela fila quando refresh falha) ─
-  const forceLogout = useCallback(() => {
+  const handleUnauthorized = useCallback(() => {
     clearSession();
-    router.push("/login");
-  }, [clearSession, router]);
+    if (!isPublicPath(pathname)) {
+      router.push("/login");
+    }
+  }, [clearSession, pathname, router]);
 
-  // ── Configura o apiClient uma única vez ───────────────────
   useEffect(() => {
-    configureApiClient({
-      getToken: () => tokenRef.current,
-      refreshToken: doRefresh,
-      forceLogout,
-    });
-  }, [doRefresh, forceLogout]);
+    resetApiClientState();
+    configureApiClient({ onUnauthorized: handleUnauthorized });
+  }, [handleUnauthorized]);
 
-  // ── Recuperação de sessão no mount ────────────────────────
   useEffect(() => {
+    if (!bootstrapOnMount) {
+      setState((prev) => ({ ...prev, isLoading: false }));
+      return;
+    }
+
     let cancelled = false;
 
     (async () => {
       try {
-        await doRefresh();
+        const res = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error("No session");
+        }
+
+        const data: SessionAuthResponse = await res.json();
+
+        if (!cancelled) {
+          setState({
+            user: data.user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        }
       } catch {
         if (!cancelled) {
-          setState({ user: null, isAuthenticated: false, isLoading: false });
+          clearSession();
+          if (!isPublicPath(pathname)) {
+            router.replace("/login");
+          }
         }
       }
     })();
@@ -154,46 +126,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [bootstrapOnMount, clearSession, pathname, router]);
 
-  // ── login ─────────────────────────────────────────────────
   const login = useCallback(
     async (
       email: string,
       password: string
     ): Promise<{ success: true } | { success: false; error: string }> => {
       try {
-        const data = await apiClient.post<LoginResponse>(
-          "/auth/student/login",
-          { email, password }
-        );
-        saveToken(data.access_token);
-        setState({ user: data.user, isAuthenticated: true, isLoading: false });
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          return {
+            success: false,
+            error: typeof data?.message === "string" ? data.message : "Credenciais inválidas",
+          };
+        }
+
+        const authData = data as SessionAuthResponse;
+
+        setState({ user: authData.user, isAuthenticated: true, isLoading: false });
         return { success: true };
-      } catch (err: unknown) {
-        const msg =
-          typeof err === "object" && err !== null && "message" in err
-            ? String((err as { message: unknown }).message)
-            : "Credenciais inválidas";
-        return { success: false, error: msg };
+      } catch {
+        return { success: false, error: "Falha ao realizar login" };
       }
     },
-    [saveToken]
+    [],
   );
 
-  // ── logout ────────────────────────────────────────────────
   const logout = useCallback(async () => {
     try {
-      await apiClient.post<MessageResponse>("/auth/logout", {});
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
     } catch {
-      // ignora erro — limpamos o estado de qualquer jeito
+      // Logout é idempotente por contrato.
     } finally {
       clearSession();
       router.push("/login");
     }
   }, [clearSession, router]);
 
-  // ── register ──────────────────────────────────────────────
   const register = useCallback(
     async (data: {
       name: string;
@@ -205,66 +186,102 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       { success: true; isInstitutional: boolean } | { success: false; error: string }
     > => {
       try {
-        const res = await apiClient.post<RegisterResponse>(
-          "/auth/student/register",
-          data
-        );
-        return { success: true, isInstitutional: res.isInstitutional };
-      } catch (err: unknown) {
-        const msg =
-          typeof err === "object" && err !== null && "message" in err
-            ? String((err as { message: unknown }).message)
-            : "Erro ao criar conta";
-        return { success: false, error: msg };
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(data),
+        });
+
+        const payload = (await res.json().catch(() => ({}))) as Partial<RegisterResponse> & {
+          message?: string;
+        };
+
+        if (!res.ok) {
+          return {
+            success: false,
+            error: typeof payload.message === "string" ? payload.message : "Erro ao criar conta",
+          };
+        }
+
+        return {
+          success: true,
+          isInstitutional: Boolean(payload.isInstitutional),
+        };
+      } catch {
+        return { success: false, error: "Erro ao criar conta" };
       }
     },
-    []
+    [],
   );
 
-  // ── verifyEmail ───────────────────────────────────────────
   const verifyEmail = useCallback(
     async (
       email: string,
       code: string
     ): Promise<{ success: true } | { success: false; error: string }> => {
       try {
-        const data = await apiClient.post<LoginResponse>(
-          "/auth/student/verify",
-          { email, code }
-        );
-        saveToken(data.access_token);
-        setState({ user: data.user, isAuthenticated: true, isLoading: false });
+        const res = await fetch("/api/auth/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, code }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          return {
+            success: false,
+            error: typeof data?.message === "string" ? data.message : "Código inválido",
+          };
+        }
+
+        const authData = data as SessionAuthResponse;
+        setState({ user: authData.user, isAuthenticated: true, isLoading: false });
+
         return { success: true };
-      } catch (err: unknown) {
-        const msg =
-          typeof err === "object" && err !== null && "message" in err
-            ? String((err as { message: unknown }).message)
-            : "Código inválido";
-        return { success: false, error: msg };
+      } catch {
+        return { success: false, error: "Falha ao verificar código" };
       }
     },
-    [saveToken]
+    [],
   );
 
-  // ── resendCode ────────────────────────────────────────────
   const resendCode = useCallback(
-    async (
-      email: string
-    ): Promise<{ success: true } | { success: false; error: string }> => {
+    async (email: string): Promise<{ success: true } | { success: false; error: string }> => {
       try {
-        await apiClient.post<MessageResponse>("/auth/student/resend-code", {
-          email,
+        const res = await fetch("/api/auth/resend-code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email }),
         });
+
+        const data = (await res.json().catch(() => ({}))) as MessageResponse;
+
+        if (!res.ok) {
+          return {
+            success: false,
+            error: typeof data?.message === "string" ? data.message : "Erro ao reenviar código",
+          };
+        }
+
+        if (data?.message) {
+          return { success: true };
+        }
+
         return { success: true };
       } catch (err: unknown) {
         const msg =
           typeof err === "object" && err !== null && "message" in err
             ? String((err as { message: unknown }).message)
             : "Erro ao reenviar código";
+
         return { success: false, error: msg };
       }
     },
-    []
+    [],
   );
 
   const value: AuthContextValue = {
@@ -278,8 +295,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-
-// ── useAuth hook ──────────────────────────────────────────────
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);

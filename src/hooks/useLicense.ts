@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { apiClient } from "@/lib/apiClient";
+import { API_BASE_URL, apiClient } from "@/lib/apiClient";
 import type { License } from "@/types/license";
 
 type StudentImage = {
@@ -15,13 +15,32 @@ interface UseLicenseResult {
   isUnderReview: boolean;
 }
 
-export function useLicense(): UseLicenseResult {
+interface UseLicenseOptions {
+  enabled?: boolean;
+}
+
+type SseTicketResponse = {
+  ticket: string;
+  expiresInMs: number;
+};
+
+export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
+  const { enabled = true } = options;
   const [license, setLicense] = useState<License | null>(null);
   const [loading, setLoading] = useState(true);
   const [isUnderReview, setIsUnderReview] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+
+    if (!enabled) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    let fallbackIntervalId: number | null = null;
+    let eventSource: EventSource | null = null;
 
     const load = async () => {
       try {
@@ -49,39 +68,100 @@ export function useLicense(): UseLicenseResult {
       }
     };
 
+    const clearFallbackPolling = () => {
+      if (fallbackIntervalId !== null) {
+        window.clearInterval(fallbackIntervalId);
+        fallbackIntervalId = null;
+      }
+    };
+
+    const startFallbackPolling = (intervalMs = 60000) => {
+      if (fallbackIntervalId !== null) return;
+
+      fallbackIntervalId = window.setInterval(() => {
+        if (!cancelled && document.visibilityState === "visible") {
+          void load();
+        }
+      }, intervalMs);
+    };
+
+    const connectSse = async () => {
+      if (typeof EventSource === "undefined") {
+        startFallbackPolling();
+        return;
+      }
+
+      let ticketData: SseTicketResponse;
+      try {
+        ticketData = await apiClient.post<SseTicketResponse>("/license/events/token", {});
+      } catch {
+        startFallbackPolling();
+        return;
+      }
+
+      const sseUrl = `${API_BASE_URL}/license/events?ticket=${encodeURIComponent(ticketData.ticket)}`;
+      eventSource = new EventSource(sseUrl);
+
+      eventSource.onopen = () => {
+        clearFallbackPolling();
+      };
+
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data) as { type?: string };
+
+          if (payload.type === "license.changed") {
+            void load();
+          }
+        } catch {
+          // ignora eventos malformados
+        }
+      };
+
+      eventSource.onerror = () => {
+        // Em caso de erro de conexão/autorização, mantemos polling como fallback.
+        startFallbackPolling();
+      };
+    };
+
     load().finally(() => {
       if (!cancelled) setLoading(false);
     });
 
+    void connectSse();
+
     const onFocus = () => {
       if (!cancelled) {
-        load();
+        void load();
       }
     };
 
     const onVisibility = () => {
       if (!cancelled && document.visibilityState === "visible") {
-        load();
+        void load();
       }
     };
-
-    // Revalida periodicamente para refletir aprovações feitas pelo funcionário sem F5.
-    const intervalId = window.setInterval(() => {
-      if (!cancelled && document.visibilityState === "visible") {
-        load();
-      }
-    }, 15000);
 
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       cancelled = true;
-      window.clearInterval(intervalId);
+      clearFallbackPolling();
+      eventSource?.close();
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+  }, [enabled]);
 
-  return { license, loading, hasLicense: license !== null, isUnderReview };
+  const effectiveLicense = enabled ? license : null;
+  const effectiveLoading = enabled ? loading : false;
+  const effectiveUnderReview = enabled ? isUnderReview : false;
+
+  return {
+    license: effectiveLicense,
+    loading: effectiveLoading,
+    hasLicense: effectiveLicense !== null,
+    isUnderReview: effectiveUnderReview,
+  };
 }

@@ -13,14 +13,16 @@ import { DASHBOARD_ACTIONS } from "@/constants/dashboard-actions";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, logout } = useAuth();
-  const { hasLicense } = useLicense();
+  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
+  const { hasLicense, loading: licenseLoading, isUnderReview } = useLicense({
+    enabled: isAuthenticated && !authLoading,
+  });
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) router.push("/login");
-  }, [isAuthenticated, isLoading, router]);
+    if (!authLoading && !isAuthenticated) router.push("/login");
+  }, [isAuthenticated, authLoading, router]);
 
-  if (isLoading || !user) return null;
+  if (authLoading || !user) return null;
 
   // identifier é o email do student
   const displayName = user.name;
@@ -33,7 +35,11 @@ export default function DashboardPage() {
         <DashboardGreeting name={displayName} />
 
         <nav className="flex flex-col gap-4 flex-1">
-          <LicenseActionCard />
+          <LicenseActionCard
+            loading={licenseLoading}
+            hasLicense={hasLicense}
+            isUnderReview={isUnderReview}
+          />
           {DASHBOARD_ACTIONS.map((action) => (
             <ActionCard
               key={action.href}
