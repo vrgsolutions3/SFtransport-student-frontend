@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
 import { BadgeCheck, Pin } from "lucide-react";
+import { AuthHeader } from "@/components/auth/AuthHeader";
 
 function VerifyEmailForm() {
   const router = useRouter();
@@ -83,19 +84,17 @@ function VerifyEmailForm() {
   );
 }
 
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-
 export default function VerifyEmailPage() {
   return (
-    <main className="flex-1 -mt-12 bg-surface rounded-t-[2.5rem] relative z-20 px-6 pt-8 pb-12 shadow-[0_-12px_40px_var(--shadow-primary-soft)]">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle className="text-on-surface-variant hover:bg-surface-container-low" />
-      </div>
-      <div className="max-w-md mx-auto">
-        <Suspense>
-          <VerifyEmailForm />
-        </Suspense>
-      </div>
-    </main>
+    <>
+      <AuthHeader />
+      <main className="flex-1 -mt-12 bg-surface rounded-t-[2.5rem] relative z-20 px-6 pt-8 pb-12 shadow-[0_-12px_40px_var(--shadow-primary-soft)]">
+        <div className="max-w-md mx-auto">
+          <Suspense>
+            <VerifyEmailForm />
+          </Suspense>
+        </div>
+      </main>
+    </>
   );
 }
