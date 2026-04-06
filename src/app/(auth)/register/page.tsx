@@ -1,5 +1,6 @@
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { BusFront } from "lucide-react";
 
 export default function RegisterPage() {
   return (
@@ -18,9 +19,7 @@ export default function RegisterPage() {
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-8">
               <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary text-3xl">
-                  directions_bus
-                </span>
+                <BusFront className="w-8 h-8 text-primary" />
               </div>
               <h1 className="font-headline font-extrabold text-2xl text-white tracking-tight">
                 São Fidélis Transporte
@@ -39,9 +38,7 @@ export default function RegisterPage() {
         {/* Right Side: Register Form */}
         <div className="p-8 md:p-12 lg:p-16 flex flex-col justify-center">
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <span className="material-symbols-outlined text-primary text-4xl">
-              directions_bus
-            </span>
+              <BusFront className="w-9 h-9 text-primary" />
             <span className="font-headline font-extrabold text-xl text-primary tracking-tight">
               São Fidélis Transporte
             </span>

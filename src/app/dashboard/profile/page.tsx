@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { api } from "@/lib/api";
+import { ArrowLeft, BadgeCheck, Loader2, School, Save, UserRound } from "lucide-react";
 
 const SHIFT_OPTIONS = [
   { value: "Manhã", label: "Manhã" },
@@ -83,9 +84,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-surface">
-        <span className="material-symbols-outlined text-primary text-5xl animate-spin">
-          progress_activity
-        </span>
+        <Loader2 className="w-12 h-12 text-primary animate-spin" />
       </div>
     );
   }
@@ -98,7 +97,7 @@ export default function ProfilePage() {
           onClick={() => router.back()}
           className="p-2 rounded-full hover:bg-surface-container-low transition-colors active:scale-95"
         >
-          <span className="material-symbols-outlined text-on-surface">arrow_back</span>
+          <ArrowLeft className="w-5 h-5 text-on-surface" />
         </button>
         <h1 className="font-headline font-bold text-on-surface text-lg flex-1">Meu Perfil</h1>
         <ThemeToggle className="text-on-surface-variant hover:bg-surface-container-low" />
@@ -108,7 +107,7 @@ export default function ProfilePage() {
         {/* Info do usuário */}
         <div className="bg-primary rounded-2xl p-5 mb-6 flex items-center gap-4">
           <div className="w-14 h-14 bg-surface-container-lowest/20 rounded-full flex items-center justify-center flex-shrink-0">
-            <span className="material-symbols-outlined text-white text-3xl">person</span>
+            <UserRound className="w-8 h-8 text-white" />
           </div>
           <div>
             <p className="text-white font-bold text-base leading-tight">{formData.name}</p>
@@ -119,7 +118,7 @@ export default function ProfilePage() {
         {/* Feedback */}
         {success && (
           <div className="bg-success-container border border-success-border text-on-success text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
-            <span className="material-symbols-outlined text-base">check_circle</span>
+            <BadgeCheck className="w-4 h-4" />
             Perfil atualizado com sucesso!
           </div>
         )}
@@ -137,7 +136,7 @@ export default function ProfilePage() {
           <Input
             label="Curso"
             type="text"
-            icon="school"
+            icon={School}
             placeholder="Ex: Engenharia de Software"
             value={formData.degree}
             onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
@@ -195,7 +194,7 @@ export default function ProfilePage() {
             size="lg"
             fullWidth
             loading={saving}
-            icon="save"
+            icon={Save}
           >
             Salvar Alterações
           </Button>

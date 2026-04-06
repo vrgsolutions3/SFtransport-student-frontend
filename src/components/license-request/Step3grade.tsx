@@ -2,7 +2,7 @@
 
 import { useMemo, useState as useSafeState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Send, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Check, Moon, Send, SunMedium, Sunset, TriangleAlert } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,22 +40,19 @@ const PERIODS = [
     id: "Manhã",
     label: "MANHÃ",
     time: "07:00 — 11:30",
-    icon: "wb_sunny",
-    iconStyle: { fontSize: "22px" },
+    icon: SunMedium,
   },
   {
     id: "Tarde",
     label: "TARDE",
     time: "13:00 — 17:30",
-    icon: "wb_twilight",
-    iconStyle: { fontSize: "22px" },
+    icon: Sunset,
   },
   {
     id: "Noite",
     label: "NOITE",
     time: "18:30 — 22:40",
-    icon: "dark_mode",
-    iconStyle: { fontSize: "22px" },
+    icon: Moon,
   },
 ];
 
@@ -221,14 +218,11 @@ export default function Step3Grade({
                 }`}
                 style={{ width: "48px", height: "48px" }}
               >
-                <span
-                  className={`material-symbols-outlined ${
+                <period.icon
+                  className={`w-5 h-5 ${
                     period.selected ? "text-primary" : "text-on-surface-variant"
                   }`}
-                  style={period.iconStyle}
-                >
-                  {period.icon}
-                </span>
+                />
               </div>
 
               <div className="flex-1 text-left">
@@ -258,12 +252,7 @@ export default function Step3Grade({
                 aria-hidden="true"
               >
                 {period.selected && (
-                  <span
-                    className="material-symbols-outlined text-white"
-                    style={{ fontSize: "16px" }}
-                  >
-                    check
-                  </span>
+                  <Check className="w-4 h-4 text-white" />
                 )}
               </div>
             </button>
@@ -304,9 +293,7 @@ export default function Step3Grade({
             hover:bg-surface-container-high"
             aria-label="Voltar para etapa anterior"
           >
-            <span className="material-symbols-outlined text-lg">
-              arrow_back
-            </span>
+            <ArrowLeft className="w-4 h-4" />
             Voltar
           </button>
 

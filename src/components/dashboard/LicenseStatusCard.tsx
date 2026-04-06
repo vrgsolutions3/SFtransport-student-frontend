@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useLicense } from "@/hooks/useLicense";
 import { License } from "@/types/license";
+import { CreditCard, Hourglass, QrCode } from "lucide-react";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("pt-BR", {
@@ -68,9 +69,7 @@ function LicenseStatusCardInner() {
             </p>
           </div>
           <div className="bg-surface-container-high rounded-full" style={{ padding: "10px" }}>
-            <span className="material-symbols-outlined text-primary" style={{ fontSize: "24px", display: "block" }}>
-              hourglass_empty
-            </span>
+            <Hourglass className="w-6 h-6 text-primary" />
           </div>
         </div>
       );
@@ -97,9 +96,7 @@ function LicenseStatusCardInner() {
           </p>
         </div>
         <div className="bg-black/10 rounded-full" style={{ padding: "10px" }}>
-          <span className="material-symbols-outlined text-white" style={{ fontSize: "24px", display: "block" }}>
-            add_card
-          </span>
+          <CreditCard className="w-6 h-6 text-white" />
         </div>
       </Link>
     );
@@ -140,9 +137,7 @@ function LicenseStatusCardInner() {
         </p>
       </div>
       <div className="bg-surface-container-lowest/10 rounded-full" style={{ padding: "10px", position: "relative", zIndex: 10 }}>
-        <span className="material-symbols-outlined text-white" style={{ fontSize: "24px", display: "block" }}>
-          qr_code_2
-        </span>
+        <QrCode className="w-6 h-6 text-white" />
       </div>
     </Link>
   );

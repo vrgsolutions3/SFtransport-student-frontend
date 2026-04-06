@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { BadgeCheck, KeyRound } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
@@ -57,7 +58,7 @@ function VerifyEmailForm() {
         <Input
           label="Código de verificação"
           type="text"
-          icon="pin"
+          icon={KeyRound}
           placeholder="000000"
           value={code}
           onChange={(e) => {
@@ -73,7 +74,7 @@ function VerifyEmailForm() {
           size="lg"
           fullWidth
           loading={loading}
-          icon="verified"
+          icon={BadgeCheck}
         >
           Verificar e-mail
         </Button>

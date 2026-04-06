@@ -19,11 +19,46 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "São Fidélis Transporte",
   description: "Sistema de transporte institucional para estudantes e servidores",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "VRG Transport",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-180.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  openGraph: {
+    title: "São Fidélis Transporte",
+    description: "Sistema de transporte institucional para estudantes e servidores",
+    type: "website",
+    images: [
+      {
+        url: "/icons/icon-512.png",
+        width: 512,
+        height: 512,
+        alt: "VRG Transport App",
+      },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1.0,
+  maximumScale: 5.0,
+  userScalable: true,
+  themeColor: "#1e40af",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -34,6 +69,23 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        {/* PWA & Mobile Meta Tags */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="VRG Transport" />
+        
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="application-name" content="São Fidélis Transporte" />
+        <meta name="msapplication-TileColor" content="#1e40af" />
+
+        <meta name="theme-color" content="#1e40af" />
+        
+        {/* Icons */}
+        <link rel="apple-touch-icon" href="/icons/icon-180.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png" />
+        
         <script dangerouslySetInnerHTML={{ __html: `
           try {
             var t = localStorage.getItem('theme') ||
