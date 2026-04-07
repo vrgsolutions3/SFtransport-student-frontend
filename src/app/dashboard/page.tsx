@@ -14,7 +14,13 @@ import { DASHBOARD_ACTIONS } from "@/constants/dashboard-actions";
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
-  const { hasLicense, loading: licenseLoading, isUnderReview } = useLicense({
+  const {
+    hasLicense,
+    loading: licenseLoading,
+    isUnderReview,
+    isRejected,
+    rejectionReason,
+  } = useLicense({
     enabled: isAuthenticated && !authLoading,
   });
 
@@ -81,6 +87,8 @@ export default function DashboardPage() {
                 loading={licenseLoading}
                 hasLicense={hasLicense}
                 isUnderReview={isUnderReview}
+                isRejected={isRejected}
+                rejectionReason={rejectionReason}
               />
               {DASHBOARD_ACTIONS.map((action) => (
                 <ActionCard
