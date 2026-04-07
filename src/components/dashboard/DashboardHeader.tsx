@@ -3,21 +3,12 @@
 
 import { useState, useEffect } from "react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { LogOut, Menu, UserRound } from "lucide-react";
+import { BusFront, LogOut, Menu, UserRound } from "lucide-react";
 import { api } from "@/lib/api";
 
 interface DashboardHeaderProps {
   onLogout: () => void;
   onNavigateProfile: () => void;
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join("");
 }
 
 export default function DashboardHeader({ onLogout, onNavigateProfile }: DashboardHeaderProps) {
@@ -70,54 +61,46 @@ export default function DashboardHeader({ onLogout, onNavigateProfile }: Dashboa
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 left-0 h-full w-72 z-50 bg-surface shadow-xl transition-transform duration-300 flex flex-col ${
+        className={`fixed top-0 left-0 h-full w-2/3 max-w-xs z-50 bg-surface shadow-xl transition-transform duration-300 flex flex-col rounded-r-2xl overflow-hidden ${
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Topo com fundo primário */}
-        <div className="bg-primary px-6 pt-14 pb-6">
-          <div className="w-20 h-20 rounded-full bg-white/20 border-2 border-white/40 overflow-hidden flex items-center justify-center mb-4">
-            {profile?.photo ? (
-              <img src={profile.photo} alt="Foto de perfil" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-xl font-bold text-white">
-                {profile ? getInitials(profile.name) : ""}
-              </span>
-            )}
+        <div className="bg-primary px-5 pt-12 pb-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center border border-white/20">
+              <BusFront className="text-white w-6 h-6" strokeWidth={2.5} />
+            </div>
+            <p className="text-white font-bold text-sm leading-tight">
+              Transporte<br />São Fidélis
+            </p>
           </div>
-          <p className="text-white font-bold text-base">{profile?.name ?? ""}</p>
-          <p className="text-white/70 text-sm mt-0.5">{profile?.email ?? ""}</p>
+
+          <div className="border-t border-white/20 pt-4">
+            <p className="text-white font-semibold text-sm">{profile?.name ?? ""}</p>
+            <p className="text-white/60 text-xs mt-0.5">{profile?.email ?? ""}</p>
+          </div>
         </div>
 
-        {/* Separador */}
-        <div className="mx-6 h-px bg-outline-variant/30 mb-2" />
-
         {/* Corpo */}
-        <div className="flex flex-col gap-1 p-4 flex-1">
+        <div className="flex flex-col py-2 flex-1">
           <button
             onClick={() => { setDrawerOpen(false); onNavigateProfile(); }}
-            className="flex items-center gap-3 px-4 py-3.5 rounded-xl hover:bg-surface-container-low transition-all w-full text-left"
+            className="flex items-center gap-4 px-5 py-4 text-sm text-on-surface hover:bg-surface-container-low transition-all w-full text-left"
           >
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <UserRound className="text-primary w-4 h-4" />
-            </div>
-            <div>
-              <span className="text-sm font-semibold text-on-surface block">Meu Perfil</span>
-              <span className="text-xs text-on-surface-muted font-normal block mt-0.5">Ver e editar informações</span>
-            </div>
+            <UserRound size={18} className="text-on-surface-variant shrink-0" />
+            <span className="font-medium">Meu Perfil</span>
           </button>
         </div>
 
         {/* Rodapé — Sair */}
-        <div className="mt-auto p-4 px-4 border-t border-outline-variant/30">
+        <div className="border-t border-outline-variant/30">
           <button
             onClick={() => { setDrawerOpen(false); onLogout(); }}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-error-container/30 transition-all w-full"
+            className="flex items-center gap-4 px-5 py-4 text-sm font-medium text-error hover:bg-error-container/20 transition-all w-full"
           >
-            <div className="w-8 h-8 rounded-lg bg-error/10 flex items-center justify-center shrink-0">
-              <LogOut className="text-error w-4 h-4" />
-            </div>
-            <span className="text-sm font-semibold text-error">Sair</span>
+            <LogOut size={18} className="shrink-0" />
+            <span>Sair da Conta</span>
           </button>
         </div>
       </div>
