@@ -1,13 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { ArrowLeft, Download, LoaderCircle, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLicense } from "@/hooks/useLicense";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import type { License } from "@/types/license";
+
+async function splitCardImage(base64: string): Promise<{ front: string; back: string }> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const halfWidth = Math.floor(img.width / 2);
+
+      function cropAndRotate(offsetX: number): string {
+        const temp = document.createElement("canvas");
+        temp.width = halfWidth;
+        temp.height = img.height;
+        temp.getContext("2d")!.drawImage(img, -offsetX, 0);
+
+        const rotated = document.createElement("canvas");
+        rotated.width = img.height;
+        rotated.height = halfWidth;
+        const ctx = rotated.getContext("2d")!;
+        ctx.translate(img.height / 2, halfWidth / 2);
+        ctx.rotate(Math.PI / 2);
+        ctx.drawImage(temp, -halfWidth / 2, -img.height / 2);
+
+        return rotated.toDataURL("image/jpeg", 0.95);
+      }
+
+      resolve({
+        front: cropAndRotate(0),
+        back: cropAndRotate(halfWidth),
+      });
+    };
+    img.src = `data:image/jpeg;base64,${base64}`;
+  });
+}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("pt-BR", {
@@ -41,7 +72,10 @@ export default function CardPage() {
   const { license, loading, hasLicense } = useLicense({
     enabled: isAuthenticated && !authLoading,
   });
+  const [cardSides, setCardSides] = useState<{ front: string; back: string } | null>(null);
+  const [activeSlide, setActiveSlide] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!loading && !hasLicense) {
@@ -50,11 +84,14 @@ export default function CardPage() {
   }, [loading, hasLicense, router]);
 
   useEffect(() => {
-    if (!lightboxOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setLightboxOpen(false); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [lightboxOpen]);
+    if (!license) return;
+    splitCardImage(license.imageLicense).then((sides) => {
+      setCardSides(sides);
+      setActiveSlide(0);
+      setLightboxOpen(false);
+      scrollRef.current?.scrollTo({ left: 0, behavior: "auto" });
+    });
+  }, [license]);
 
   const handleDownload = () => {
     if (!license) return;
@@ -66,8 +103,17 @@ export default function CardPage() {
 
   if (loading || !license) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-surface">
-        <LoaderCircle className="text-primary animate-spin" size={44} />
+      <div className="min-h-screen bg-surface">
+        <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/30 h-16" />
+        <main className="animate-pulse pt-20 pb-10 px-4 max-w-lg mx-auto">
+          <div className="mx-auto w-4/5 bg-surface-container-low h-56 mb-4" />
+          <div className="flex justify-center gap-2 mb-5">
+            <div className="bg-primary w-6 h-2 rounded-full" />
+            <div className="bg-outline-variant w-2 h-2 rounded-full" />
+          </div>
+          <div className="bg-surface-container-low rounded-xl h-16 mb-4" />
+          <div className="bg-primary rounded-xl h-13" />
+        </main>
       </div>
     );
   }
@@ -88,48 +134,93 @@ export default function CardPage() {
       </header>
 
       <main className="pt-20 pb-10 px-4 max-w-lg mx-auto">
-        {/* Imagem da carteirinha em alta qualidade */}
+        {/* Frente/verso com swipe horizontal */}
         <div
-          className="rounded-2xl overflow-hidden mb-5 cursor-zoom-in"
-          style={{ boxShadow: "0 8px 32px var(--shadow-primary)" }}
-          onClick={() => setLightboxOpen(true)}
+          ref={scrollRef}
+          className="mx-auto w-4/5 flex overflow-x-auto snap-x snap-mandatory scroll-smooth mb-4"
+          style={{
+            scrollbarWidth: "none",
+          }}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            const index = Math.round(el.scrollLeft / el.offsetWidth);
+            setActiveSlide(index);
+          }}
         >
-          <Image
-            src={`data:image/jpeg;base64,${license.imageLicense}`}
-            alt="Carteirinha estudantil"
-            width={1200}
-            height={800}
-            unoptimized
-            className="w-full h-auto block"
-            draggable={false}
-          />
+          {cardSides ? (
+            <>
+              <div
+                className="snap-center shrink-0 w-full cursor-zoom-in"
+                onClick={() => setLightboxOpen(true)}
+              >
+                <img
+                  src={cardSides.front}
+                  alt="Frente da carteirinha"
+                  className="w-full h-auto block"
+                  draggable={false}
+                />
+              </div>
+              <div
+                className="snap-center shrink-0 w-full cursor-zoom-in"
+                onClick={() => setLightboxOpen(true)}
+              >
+                <img
+                  src={cardSides.back}
+                  alt="Verso da carteirinha"
+                  className="w-full h-auto block"
+                  draggable={false}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="w-full flex items-center justify-center py-20">
+              <LoaderCircle className="text-primary animate-spin" size={32} />
+            </div>
+          )}
         </div>
 
-        {/* Lightbox */}
-        {lightboxOpen && (
+        {lightboxOpen && cardSides && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-surface/95 p-4"
             onClick={() => setLightboxOpen(false)}
           >
             <button
-              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-full bg-surface-container-high/70 hover:bg-surface-container-high transition-colors"
               onClick={() => setLightboxOpen(false)}
               aria-label="Fechar"
             >
-              <X className="text-white" size={22} />
+              <X className="text-on-surface" size={22} />
             </button>
-            <Image
-              src={`data:image/jpeg;base64,${license.imageLicense}`}
-              alt="Carteirinha estudantil ampliada"
-              width={1200}
-              height={800}
-              unoptimized
-              className="w-full max-w-2xl h-auto rounded-xl"
+            <img
+              src={activeSlide === 0 ? cardSides.front : cardSides.back}
+              alt="Carteirinha ampliada"
+              className="w-full max-w-sm h-auto"
               draggable={false}
               onClick={(e) => e.stopPropagation()}
             />
           </div>
         )}
+
+        <div className="flex justify-center gap-2 mb-5">
+          {["Frente", "Verso"].map((label, i) => (
+            <button
+              key={label}
+              onClick={() => {
+                if (!scrollRef.current) return;
+                scrollRef.current.scrollTo({ left: i * scrollRef.current.offsetWidth, behavior: "smooth" });
+                setActiveSlide(i);
+              }}
+              className={`transition-all duration-300 rounded-full ${
+                activeSlide === i
+                  ? "bg-primary w-6 h-2"
+                  : "bg-outline-variant w-2 h-2"
+              }`}
+              aria-label={label}
+            >
+              <span className="sr-only">{label}</span>
+            </button>
+          ))}
+        </div>
 
         {/* Status e validade */}
         <div
