@@ -3,7 +3,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { CreditCard, BadgeCheck, Clock3 } from "lucide-react";
-import { useLicense } from "@/hooks/useLicense";
 
 function Skeleton() {
   return (
@@ -11,8 +10,17 @@ function Skeleton() {
   );
 }
 
-function LicenseActionCardInner() {
-  const { loading, hasLicense, isUnderReview } = useLicense();
+interface LicenseActionCardProps {
+  loading: boolean;
+  hasLicense: boolean;
+  isUnderReview: boolean;
+}
+
+function LicenseActionCardInner({
+  loading,
+  hasLicense,
+  isUnderReview,
+}: LicenseActionCardProps) {
 
   if (loading) return <Skeleton />;
 
@@ -84,10 +92,10 @@ function LicenseActionCardInner() {
   );
 }
 
-export default function LicenseActionCard() {
+export default function LicenseActionCard(props: LicenseActionCardProps) {
   return (
     <Suspense fallback={<Skeleton />}>
-      <LicenseActionCardInner />
+      <LicenseActionCardInner {...props} />
     </Suspense>
   );
 }

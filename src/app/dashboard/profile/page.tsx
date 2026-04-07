@@ -3,8 +3,20 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+
+import { ArrowLeft, Camera, ImageIcon,  Trash2 } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
-import { ArrowLeft, Camera, ImageIcon, Trash2 } from "lucide-react";
+
+const SHIFT_OPTIONS = [
+  { value: "Manhã", label: "Manhã" },
+  { value: "Tarde", label: "Tarde" },
+  { value: "Noite", label: "Noite" },
+  { value: "Integral", label: "Integral" },
+];
+
+const BLOOD_TYPE_OPTIONS = [
+  "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-",
+];
 
 interface StudentProfile {
   name: string;

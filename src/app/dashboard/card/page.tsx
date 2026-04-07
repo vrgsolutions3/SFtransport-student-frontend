@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { ArrowLeft, Download, LoaderCircle, X } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useLicense } from "@/hooks/useLicense";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import type { License } from "@/types/license";
@@ -35,7 +37,10 @@ function statusColor(status: License["status"]) {
 
 export default function CardPage() {
   const router = useRouter();
-  const { license, loading, hasLicense } = useLicense();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { license, loading, hasLicense } = useLicense({
+    enabled: isAuthenticated && !authLoading,
+  });
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
@@ -89,9 +94,12 @@ export default function CardPage() {
           style={{ boxShadow: "0 8px 32px var(--shadow-primary)" }}
           onClick={() => setLightboxOpen(true)}
         >
-          <img
+          <Image
             src={`data:image/jpeg;base64,${license.imageLicense}`}
             alt="Carteirinha estudantil"
+            width={1200}
+            height={800}
+            unoptimized
             className="w-full h-auto block"
             draggable={false}
           />
@@ -110,9 +118,12 @@ export default function CardPage() {
             >
               <X className="text-white" size={22} />
             </button>
-            <img
+            <Image
               src={`data:image/jpeg;base64,${license.imageLicense}`}
               alt="Carteirinha estudantil ampliada"
+              width={1200}
+              height={800}
+              unoptimized
               className="w-full max-w-2xl h-auto rounded-xl"
               draggable={false}
               onClick={(e) => e.stopPropagation()}

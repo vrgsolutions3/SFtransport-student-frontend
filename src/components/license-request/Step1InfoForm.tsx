@@ -56,8 +56,6 @@ export default function Step1InfoForm({
     courseOptions,
     handleInstitutionChange,
     handleCourseChange,
-    institution,
-    course,
   } = useInstitutionAutocomplete(data.institution, data.degree);
 
   const updateFormData = (updates: Partial<Step1Data>) => {

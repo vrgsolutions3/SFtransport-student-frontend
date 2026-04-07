@@ -7,7 +7,7 @@
 // ⚠️  Novos arquivos devem importar diretamente de "@/lib/apiClient".
 // ─────────────────────────────────────────────────────────────
  
-import { apiClient } from "@/lib/apiClient";
+import { apiClient } from "./apiClient";
  
 /** @deprecated Use apiClient de "@/lib/apiClient" */
 export const api = apiClient;
@@ -26,6 +26,6 @@ export function setTokens(_accessToken: string, _refreshToken: string) {
  * @deprecated Use AuthContext.logout() para limpar a sessão.
  */
 export function clearTokens() {
-  document.cookie = "access_token=; path=/; max-age=0; SameSite=Strict";
+  // No-op: sessão agora é controlada por cookie httpOnly sid no BFF.
 }
  
