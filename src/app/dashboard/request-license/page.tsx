@@ -142,7 +142,7 @@ async function deserializeDocumentEntries(data: PersistedStep2): Promise<Documen
 
 export default function RequestLicensePage() {
   const router = useRouter();
-  const { isUnderReview, loading } = useLicense();
+  const { isUnderReview, loading, licenseRequest } = useLicense();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [step1, setStep1] = useState<Step1Data>(EMPTY_STEP1);
@@ -157,7 +157,7 @@ export default function RequestLicensePage() {
   useEffect(() => {
     let cancelled = false;
 
-    if (!loading && isUnderReview) {
+    if (!loading && isUnderReview && licenseRequest?.type === "initial") {
       router.replace("/dashboard?pending=true");
       return;
     }
@@ -180,7 +180,7 @@ export default function RequestLicensePage() {
     return () => {
       cancelled = true;
     };
-  }, [isUnderReview, loading, router]);
+  }, [isUnderReview, loading, licenseRequest?.type, router]);
 
   const handleContinueFromStep1 = () => {
     setWithTTL(STORAGE_KEY, step1);
@@ -352,7 +352,7 @@ export default function RequestLicensePage() {
             size="lg"
             className="flex-1"
             loading={submitting}
-            disabled={step3.selections.length === 0 || submitting}
+            disabled={step3.selections.length === 0 || submitting || isUnderReview}
             icon={Send}
             onClick={() => setShowConfirmModal(true)}
           >

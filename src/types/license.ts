@@ -14,7 +14,9 @@ export interface License {
 export interface LicenseRequest {
   _id: string;
   studentId: string;
-  status: "pending" | "approved" | "rejected";
+  type?: "initial" | "update";
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  changedDocuments?: string[];
   rejectionReason: string | null;
   rejectedAt: string | null;
   licenseId: string | null;

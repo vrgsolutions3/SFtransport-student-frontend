@@ -37,9 +37,10 @@ export default function ActionCard({ action, disabled = false }: ActionCardProps
     return (
       <div
         className={cn(
-          "flex items-center justify-between p-6 rounded-xl opacity-50 cursor-not-allowed select-none",
+          "flex items-center justify-between p-6 rounded-xl opacity-50 cursor-not-allowed pointer-events-none select-none",
           v.card
         )}
+        aria-disabled="true"
         style={{ boxShadow: v.shadow }}
       >
         <div>

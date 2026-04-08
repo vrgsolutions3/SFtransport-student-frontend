@@ -1,4 +1,4 @@
-import { QrCode, UserCog, type LucideIcon } from "lucide-react";
+import { FolderOpen, QrCode, UserCog, type LucideIcon } from "lucide-react";
 
 export interface DashboardAction {
   href: string;
@@ -10,7 +10,17 @@ export interface DashboardAction {
   requiresLicense?: boolean;
 }
 
+export const DOCUMENTS_ACTION: DashboardAction = {
+  href: "/dashboard/documents",
+  title: "Meus Documentos",
+  description: "Ver e atualizar documentos enviados",
+  icon: FolderOpen,
+  variant: "surface",
+  requiresLicense: false,
+};
+
 export const DASHBOARD_ACTIONS: DashboardAction[] = [
+  DOCUMENTS_ACTION,
   {
     href: "/dashboard/card",
     title: "Visualização da carteirinha",

@@ -1,6 +1,6 @@
 "use client";
 
-const STEPS = [
+const DEFAULT_STEPS = [
   { label: "Informações" },
   { label: "Documentos" },
   { label: "Grade" },
@@ -8,11 +8,20 @@ const STEPS = [
 
 interface StepIndicatorProps {
   currentStep: number;
+  totalSteps?: number;
+  labels?: string[];
 }
 
-export default function StepIndicator({ currentStep }: StepIndicatorProps) {
-  const progress = [33, 66, 100][currentStep - 1] ?? 33;
-  const label = STEPS[currentStep - 1]?.label ?? "";
+export default function StepIndicator({
+  currentStep,
+  totalSteps = DEFAULT_STEPS.length,
+  labels,
+}: StepIndicatorProps) {
+  const stepLabels = labels ?? DEFAULT_STEPS.map((step) => step.label);
+  const safeTotal = Math.max(1, totalSteps);
+  const safeCurrent = Math.min(Math.max(currentStep, 1), safeTotal);
+  const progress = Math.round((safeCurrent / safeTotal) * 100);
+  const label = stepLabels[safeCurrent - 1] ?? "";
 
   return (
     <div className="mb-6 space-y-2">
@@ -23,7 +32,7 @@ export default function StepIndicator({ currentStep }: StepIndicatorProps) {
         />
       </div>
       <p className="text-xs text-on-surface-variant">
-        Passo {currentStep} de 3 — {label}
+        Passo {safeCurrent} de {safeTotal} — {label}
       </p>
     </div>
   );
