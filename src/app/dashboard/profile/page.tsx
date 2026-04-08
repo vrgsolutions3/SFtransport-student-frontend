@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 import { ArrowLeft, Camera, ImageIcon,  Trash2 } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
+import { formatPhone } from "@/lib/formatters";
 
 const SHIFT_OPTIONS = [
   { value: "Manhã", label: "Manhã" },
@@ -37,15 +38,6 @@ const DAY_LABELS: Record<string, string> = {
   QUI: "Quinta",
   SEX: "Sexta",
 };
-
-function formatPhone(digits: string): string {
-  if (digits.length === 0) return "";
-  if (digits.length <= 2) return `(${digits}`;
-  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  if (digits.length <= 10)
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-}
 
 function getInitials(name: string): string {
   return name
