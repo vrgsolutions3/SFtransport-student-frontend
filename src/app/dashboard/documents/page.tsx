@@ -99,7 +99,7 @@ function DocumentsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { licenseRequest, isUnderReview, loading: licenseLoading } = useLicense({
+  const { hasLicense, licenseRequest, loading: licenseLoading } = useLicense({
     enabled: isAuthenticated && !authLoading,
   });
 
@@ -199,16 +199,9 @@ function DocumentsPageContent() {
     return DISPLAY_ORDER.map((type) => byType.get(type)).filter(Boolean) as StudentImage[];
   }, [images]);
 
-  const hasPendingRequest =
-    isUnderReview && licenseRequest?.status === "pending";
-
-  const pendingMessage =
-    licenseRequest?.type === "initial"
-      ? "Você já tem uma solicitação pendente de criação de carteirinha. Aguarde a análise."
-      : "Você já possui uma solicitação de alteração de documentos em andamento.";
-
-  const shouldRedirectToInitialFlow =
-    visibleImages.length === 0 && !hasPendingRequest;
+  const hasPendingUpdateRequest =
+    licenseRequest?.type === "update" && licenseRequest?.status === "pending";
+  const canRequestDocumentUpdate = hasLicense && !hasPendingUpdateRequest;
 
   if (loading || authLoading || licenseLoading) {
     return <DocumentsPageSkeleton />;
@@ -348,28 +341,26 @@ function DocumentsPageContent() {
         )}
 
         <footer className="mt-6">
-          {hasPendingRequest ? (
-            <div className="rounded-xl border border-warning/30 bg-warning-container text-warning px-4 py-3 text-sm">
-              {pendingMessage}
-            </div>
-          ) : (
+          <div className="space-y-2">
             <button
               type="button"
-              onClick={() =>
-                router.push(
-                  shouldRedirectToInitialFlow
-                    ? "/dashboard/request-license"
-                    : "/dashboard/documents/update",
-                )
-              }
-              disabled={loading || authLoading || licenseLoading}
-              className="w-full h-12 rounded-xl bg-primary text-white font-semibold text-sm transition-all active:scale-95"
+              onClick={() => router.push("/dashboard/documents/update")}
+              disabled={!canRequestDocumentUpdate || loading || authLoading || licenseLoading}
+              className="w-full h-12 rounded-xl bg-primary text-white font-semibold text-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {shouldRedirectToInitialFlow
-                ? "Ir para criação de carteirinha"
-                : "Solicitar alteração de documentos"}
+              Solicitar alteração de documentos
             </button>
-          )}
+            {!hasLicense && (
+              <p className="text-sm px-3 py-2 rounded-lg border border-warning/30 bg-warning-container text-warning">
+                O reenvio de documentos só pode ocorrer após a criação da carteirinha.
+              </p>
+            )}
+            {hasPendingUpdateRequest && (
+              <p className="text-sm px-3 py-2 rounded-lg border border-warning/30 bg-warning-container text-warning">
+                Você já possui uma solicitação de alteração de documentos pendente. Aguarde a análise para enviar uma nova solicitação.
+              </p>
+            )}
+          </div>
         </footer>
       </main>
 

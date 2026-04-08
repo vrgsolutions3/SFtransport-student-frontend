@@ -68,6 +68,26 @@ const Step2Documents = dynamic(
   }
 );
 
+function RequestLicensePageSkeleton() {
+  return (
+    <div className="min-h-screen bg-surface">
+      <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md shadow-sm flex items-center gap-3 px-4 h-16">
+        <div className="w-9 h-9 rounded-full bg-surface-container-low animate-pulse" />
+        <div className="h-5 w-44 rounded-md bg-surface-container-low animate-pulse" />
+        <div className="ml-auto w-9 h-9 rounded-full bg-surface-container-low animate-pulse" />
+      </header>
+
+      <main className="pt-20 pb-10 px-5 max-w-lg mx-auto space-y-4 animate-pulse">
+        <div className="h-10 rounded-xl bg-surface-container-low border border-outline-variant/30" />
+        <div className="h-14 rounded-xl bg-surface-container-low border border-outline-variant/30" />
+        <div className="h-14 rounded-xl bg-surface-container-low border border-outline-variant/30" />
+        <div className="h-14 rounded-xl bg-surface-container-low border border-outline-variant/30" />
+        <div className="h-14 rounded-xl bg-surface-container-low border border-outline-variant/30" />
+      </main>
+    </div>
+  );
+}
+
 function makeEmptyEntries(): DocumentEntries {
   return Object.fromEntries(
     LICENSE_DOCUMENTS.map((d) => [d.photoType, null])
@@ -153,6 +173,8 @@ export default function RequestLicensePage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  const interactionBlocked = loading || isUnderReview;
 
   useEffect(() => {
     let cancelled = false;
@@ -266,6 +288,10 @@ export default function RequestLicensePage() {
     }
   };
 
+  if (loading) {
+    return <RequestLicensePageSkeleton />;
+  }
+
   return (
     <div className="min-h-screen bg-surface">
       <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md shadow-sm flex items-center gap-3 px-4 h-16">
@@ -307,6 +333,7 @@ export default function RequestLicensePage() {
             onChange={setDocumentEntries}
             onBack={handleBackFromStep2}
             onContinue={handleContinueFromStep2}
+            continueDisabled={interactionBlocked}
           />
         )}
 
@@ -330,6 +357,7 @@ export default function RequestLicensePage() {
             size="lg"
             icon={ArrowRight}
             className="w-3/4 max-w-xs"
+            disabled={interactionBlocked}
           >
             Continuar
           </Button>
@@ -352,7 +380,7 @@ export default function RequestLicensePage() {
             size="lg"
             className="flex-1"
             loading={submitting}
-            disabled={step3.selections.length === 0 || submitting || isUnderReview}
+            disabled={step3.selections.length === 0 || submitting || interactionBlocked}
             icon={Send}
             onClick={() => setShowConfirmModal(true)}
           >

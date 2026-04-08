@@ -65,7 +65,6 @@ export default function DashboardPage() {
   // identifier é o email do student
   const displayName = user.name;
   const shouldShowDocumentsCard = hasLicense || licenseRequest !== null;
-  const hasPendingRequest = licenseRequest?.status === "pending";
 
   return (
     <>
@@ -84,13 +83,7 @@ export default function DashboardPage() {
               rejectionReason={rejectionReason}
             />
             {shouldShowDocumentsCard && (
-              <ActionCard
-                action={{
-                  ...DOCUMENTS_ACTION,
-                  disabledDescription: "Você já tem uma solicitação pendente. Aguarde a análise.",
-                }}
-                disabled={licenseLoading || hasPendingRequest}
-              />
+              <ActionCard action={DOCUMENTS_ACTION} />
             )}
             {DASHBOARD_ACTIONS.filter((action) => action.href !== DOCUMENTS_ACTION.href).map((action) => (
               <ActionCard
