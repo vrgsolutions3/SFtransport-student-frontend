@@ -108,27 +108,28 @@ async function serializeDocumentEntries(
   return serialized;
 }
 
-function dataUrlToFile(dataUrl: string, fileName: string, type: string): File {
-  const commaIndex = dataUrl.indexOf(",");
-  const base64 = commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : "";
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-
-  return new File([bytes], fileName, { type });
+async function dataUrlToFile(
+  dataUrl: string,
+  fileName: string,
+  type: string,
+): Promise<File> {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  return new File([blob], fileName, { type });
 }
 
-function deserializeDocumentEntries(data: PersistedStep2): DocumentEntries {
+async function deserializeDocumentEntries(data: PersistedStep2): Promise<DocumentEntries> {
   const hydrated = makeEmptyEntries();
 
   for (const doc of LICENSE_DOCUMENTS) {
     const persisted = data[doc.photoType];
     if (!persisted) continue;
 
-    const file = dataUrlToFile(persisted.dataUrl, persisted.name, persisted.type);
+    const file = await dataUrlToFile(
+      persisted.dataUrl,
+      persisted.name,
+      persisted.type,
+    );
     hydrated[doc.photoType] = {
       file,
       previewUrl: file.type.startsWith("image/") ? persisted.dataUrl : "",
@@ -154,6 +155,8 @@ export default function RequestLicensePage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!loading && isUnderReview) {
       router.replace("/dashboard?pending=true");
       return;
@@ -167,8 +170,16 @@ export default function RequestLicensePage() {
 
     const savedStep2 = getWithTTL<PersistedStep2>(STORAGE_KEY_STEP2, ONE_DAY_MS);
     if (savedStep2) {
-      setDocumentEntries(deserializeDocumentEntries(savedStep2));
+      void deserializeDocumentEntries(savedStep2).then((entries) => {
+        if (!cancelled) {
+          setDocumentEntries(entries);
+        }
+      });
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [isUnderReview, loading, router]);
 
   const handleContinueFromStep1 = () => {
