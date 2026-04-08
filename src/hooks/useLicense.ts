@@ -2,17 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { API_BASE_URL, apiClient } from "@/lib/apiClient";
-import type { License } from "@/types/license";
-
-type StudentImage = {
-  photoType: "ProfilePhoto" | "EnrollmentProof" | "CourseSchedule" | "LicenseImage";
-};
+import type { License, LicenseRequest } from "@/types/license";
 
 interface UseLicenseResult {
   license: License | null;
+  licenseRequest: LicenseRequest | null;
   loading: boolean;
   hasLicense: boolean;
   isUnderReview: boolean;
+  isRejected: boolean;
+  rejectionReason: string | null;
 }
 
 interface UseLicenseOptions {
@@ -27,8 +26,11 @@ type SseTicketResponse = {
 export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
   const { enabled = true } = options;
   const [license, setLicense] = useState<License | null>(null);
+  const [licenseRequest, setLicenseRequest] = useState<LicenseRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [isUnderReview, setIsUnderReview] = useState(false);
+  const [isRejected, setIsRejected] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,7 +50,10 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
         if (cancelled) return;
 
         setLicense(myLicense);
+        setLicenseRequest(null);
         setIsUnderReview(false);
+        setIsRejected(false);
+        setRejectionReason(null);
         return;
       } catch {
         if (!cancelled) {
@@ -57,14 +62,39 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
       }
 
       try {
-        const myImages = await apiClient.get<StudentImage[]>("/image/me");
+        const request = await apiClient.get<LicenseRequest>("/license-request/me");
         if (cancelled) return;
 
-        const hasEnrollment = myImages.some((img) => img.photoType === "EnrollmentProof");
-        const hasSchedule = myImages.some((img) => img.photoType === "CourseSchedule");
-        setIsUnderReview(hasEnrollment && hasSchedule);
+        if (!request) {
+          setLicenseRequest(null);
+          setIsUnderReview(false);
+          setIsRejected(false);
+          setRejectionReason(null);
+          return;
+        }
+
+        setLicenseRequest(request);
+
+        if (request.status === "pending") {
+          setIsUnderReview(true);
+          setIsRejected(false);
+          setRejectionReason(null);
+        } else if (request.status === "rejected") {
+          setIsUnderReview(false);
+          setIsRejected(true);
+          setRejectionReason(request.rejectionReason);
+        } else {
+          setIsUnderReview(false);
+          setIsRejected(false);
+          setRejectionReason(null);
+        }
       } catch {
-        if (!cancelled) setIsUnderReview(false);
+        if (!cancelled) {
+          setLicenseRequest(null);
+          setIsUnderReview(false);
+          setIsRejected(false);
+          setRejectionReason(null);
+        }
       }
     };
 
@@ -155,13 +185,19 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
   }, [enabled]);
 
   const effectiveLicense = enabled ? license : null;
+  const effectiveLicenseRequest = enabled ? licenseRequest : null;
   const effectiveLoading = enabled ? loading : false;
   const effectiveUnderReview = enabled ? isUnderReview : false;
+  const effectiveRejected = enabled ? isRejected : false;
+  const effectiveRejectionReason = enabled ? rejectionReason : null;
 
   return {
     license: effectiveLicense,
+    licenseRequest: effectiveLicenseRequest,
     loading: effectiveLoading,
     hasLicense: effectiveLicense !== null,
     isUnderReview: effectiveUnderReview,
+    isRejected: effectiveRejected,
+    rejectionReason: effectiveRejectionReason,
   };
 }

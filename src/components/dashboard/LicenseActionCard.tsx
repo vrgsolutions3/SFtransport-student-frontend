@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
-import { CreditCard, BadgeCheck, Clock3 } from "lucide-react";
+import { CreditCard, BadgeCheck, Clock3, XCircle } from "lucide-react";
 
 function Skeleton() {
   return (
@@ -14,12 +14,16 @@ interface LicenseActionCardProps {
   loading: boolean;
   hasLicense: boolean;
   isUnderReview: boolean;
+  isRejected: boolean;
+  rejectionReason: string | null;
 }
 
 function LicenseActionCardInner({
   loading,
   hasLicense,
   isUnderReview,
+  isRejected,
+  rejectionReason,
 }: LicenseActionCardProps) {
 
   if (loading) return <Skeleton />;
@@ -42,6 +46,36 @@ function LicenseActionCardInner({
         <div className="bg-black/10 rounded-full p-3 shrink-0 ml-4">
           <Clock3 className="text-white w-7 h-7" />
         </div>
+      </div>
+    );
+  }
+
+  if (isRejected) {
+    return (
+      <div
+        className="flex flex-col rounded-xl bg-error-container border border-error/30 p-5"
+        style={{ boxShadow: "0 4px 20px var(--shadow-error, rgba(186,26,26,0.15))" }}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <XCircle className="text-error w-5 h-5 shrink-0" />
+            <h3 className="font-headline font-bold text-error text-base">
+              Carteirinha recusada
+            </h3>
+          </div>
+        </div>
+        {rejectionReason && (
+          <p className="text-sm text-error/80 mb-4">
+            Motivo: <span className="font-medium">{rejectionReason}</span>
+          </p>
+        )}
+        <Link
+          href="/dashboard/request-license"
+          className="flex items-center justify-center gap-2 rounded-xl bg-error text-white text-sm font-semibold py-2.5 px-4 active:scale-95 transition-all"
+        >
+          <CreditCard className="w-4 h-4" />
+          Solicitar novamente
+        </Link>
       </div>
     );
   }

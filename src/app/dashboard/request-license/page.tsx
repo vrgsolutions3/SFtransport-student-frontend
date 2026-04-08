@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight, AlertCircle, Send } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useLicense } from "@/hooks/useLicense";
 import StepIndicator from "@/components/license-request/StepIndicator";
 import Step1InfoForm, {
   Step1Data,
@@ -140,6 +141,7 @@ function deserializeDocumentEntries(data: PersistedStep2): DocumentEntries {
 
 export default function RequestLicensePage() {
   const router = useRouter();
+  const { isUnderReview, loading } = useLicense();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [step1, setStep1] = useState<Step1Data>(EMPTY_STEP1);
@@ -152,6 +154,11 @@ export default function RequestLicensePage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
+    if (!loading && isUnderReview) {
+      router.replace("/dashboard?pending=true");
+      return;
+    }
+
     const savedStep1 = getWithTTL<Step1Data>(STORAGE_KEY, ONE_DAY_MS);
     if (savedStep1) setStep1(savedStep1);
 
@@ -162,7 +169,7 @@ export default function RequestLicensePage() {
     if (savedStep2) {
       setDocumentEntries(deserializeDocumentEntries(savedStep2));
     }
-  }, []);
+  }, [isUnderReview, loading, router]);
 
   const handleContinueFromStep1 = () => {
     setWithTTL(STORAGE_KEY, step1);

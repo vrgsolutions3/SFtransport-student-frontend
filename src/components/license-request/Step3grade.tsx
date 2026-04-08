@@ -21,7 +21,6 @@ interface Step3GradeProps {
   onBack: () => void;
   onSubmit: () => void;
   submitting?: boolean;
-  todayIndex?: number;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -58,13 +57,9 @@ function buildKey(day: string, period: string) {
 export default function Step3Grade({
   data,
   onChange,
-  todayIndex,
 }: Step3GradeProps) {
-  const todayIdx = todayIndex ?? new Date().getDay();
-  const todayDayInfo = DAYS.find((d) => d.dayOfWeek === todayIdx);
-
   const [activeDay, setActiveDay] = useSafeState<string>(
-    todayDayInfo?.short ?? DAYS[0].short,
+    DAYS[0].short,
   );
 
   const selectionSet = useMemo(
@@ -123,7 +118,6 @@ export default function Step3Grade({
         <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
           {DAYS.map((day) => {
             const active = day.short === activeDay;
-            const isToday = day.dayOfWeek === todayIdx;
             const hasSel = data.selections.some((s) => s.day === day.short);
 
             return (
@@ -131,7 +125,7 @@ export default function Step3Grade({
                 key={day.short}
                 type="button"
                 onClick={() => setActiveDay(day.short)}
-                aria-label={`Selecionar ${day.full}${isToday ? " (hoje)" : ""}`}
+                aria-label={`Selecionar ${day.full}`}
                 className={`relative shrink-0 flex-1 min-w-0 flex flex-col items-center justify-center gap-1 rounded-2xl h-16 transition-all active:scale-95 ${
                   active
                     ? "bg-primary text-white shadow-md"
@@ -151,14 +145,6 @@ export default function Step3Grade({
                     className="absolute bottom-2 bg-primary rounded-full"
                     style={{ width: "6px", height: "6px" }}
                     aria-label="Períodos selecionados neste dia"
-                  />
-                )}
-
-                {isToday && !active && (
-                  <span
-                    className="absolute -top-1 -right-1 bg-secondary rounded-full"
-                    style={{ width: "10px", height: "10px", border: "2px solid var(--color-surface)" }}
-                    aria-label="Dia atual"
                   />
                 )}
               </button>
