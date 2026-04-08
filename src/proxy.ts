@@ -19,7 +19,7 @@ const PUBLIC_PATHS = [...AUTH_PUBLIC_PATHS, ...UTILITY_PUBLIC_PATHS];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const sid = request.cookies.get("sid")?.value;
+  const sid = request.cookies.get("_tk")?.value;
 
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   const isRoot = pathname === "/";

@@ -128,25 +128,36 @@ export function AuthProvider({
     };
   }, [bootstrapOnMount, clearSession, pathname, router]);
 
+  const authFetch = useCallback(
+    async (
+      url: string,
+      options: RequestInit,
+    ): Promise<{ ok: boolean; data: unknown; status: number }> => {
+      const res = await fetch(url, options);
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, data, status: res.status };
+    },
+    [],
+  );
+
   const login = useCallback(
     async (
       email: string,
       password: string
     ): Promise<{ success: true } | { success: false; error: string }> => {
       try {
-        const res = await fetch("/api/auth/login", {
+        const { ok, data } = await authFetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ email, password }),
         });
 
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
+        if (!ok) {
+          const payload = data as { message?: string };
           return {
             success: false,
-            error: typeof data?.message === "string" ? data.message : "Credenciais inválidas",
+            error: typeof payload.message === "string" ? payload.message : "Credenciais inválidas",
           };
         }
 
@@ -158,7 +169,7 @@ export function AuthProvider({
         return { success: false, error: "Falha ao realizar login" };
       }
     },
-    [],
+    [authFetch],
   );
 
   const logout = useCallback(async () => {
@@ -186,18 +197,18 @@ export function AuthProvider({
       { success: true; isInstitutional: boolean } | { success: false; error: string }
     > => {
       try {
-        const res = await fetch("/api/auth/register", {
+        const { ok, data: payloadData } = await authFetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(data),
         });
 
-        const payload = (await res.json().catch(() => ({}))) as Partial<RegisterResponse> & {
+        const payload = payloadData as Partial<RegisterResponse> & {
           message?: string;
         };
 
-        if (!res.ok) {
+        if (!ok) {
           return {
             success: false,
             error: typeof payload.message === "string" ? payload.message : "Erro ao criar conta",
@@ -212,7 +223,7 @@ export function AuthProvider({
         return { success: false, error: "Erro ao criar conta" };
       }
     },
-    [],
+    [authFetch],
   );
 
   const verifyEmail = useCallback(
@@ -221,19 +232,18 @@ export function AuthProvider({
       code: string
     ): Promise<{ success: true } | { success: false; error: string }> => {
       try {
-        const res = await fetch("/api/auth/verify", {
+        const { ok, data } = await authFetch("/api/auth/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ email, code }),
         });
 
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
+        if (!ok) {
+          const payload = data as { message?: string };
           return {
             success: false,
-            error: typeof data?.message === "string" ? data.message : "Código inválido",
+            error: typeof payload.message === "string" ? payload.message : "Código inválido",
           };
         }
 
@@ -245,29 +255,29 @@ export function AuthProvider({
         return { success: false, error: "Falha ao verificar código" };
       }
     },
-    [],
+    [authFetch],
   );
 
   const resendCode = useCallback(
     async (email: string): Promise<{ success: true } | { success: false; error: string }> => {
       try {
-        const res = await fetch("/api/auth/resend-code", {
+        const { ok, data } = await authFetch("/api/auth/resend-code", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ email }),
         });
 
-        const data = (await res.json().catch(() => ({}))) as MessageResponse;
+        const payload = data as MessageResponse;
 
-        if (!res.ok) {
+        if (!ok) {
           return {
             success: false,
-            error: typeof data?.message === "string" ? data.message : "Erro ao reenviar código",
+            error: typeof payload?.message === "string" ? payload.message : "Erro ao reenviar código",
           };
         }
 
-        if (data?.message) {
+        if (payload?.message) {
           return { success: true };
         }
 
@@ -281,7 +291,7 @@ export function AuthProvider({
         return { success: false, error: msg };
       }
     },
-    [],
+    [authFetch],
   );
 
   const value: AuthContextValue = {

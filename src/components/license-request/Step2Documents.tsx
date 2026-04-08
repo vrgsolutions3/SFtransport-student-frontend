@@ -19,6 +19,7 @@ interface Step2DocumentsProps {
   onChange: (entries: DocumentEntries) => void;
   onBack: () => void;
   onContinue: () => void;
+  continueDisabled?: boolean;
 }
 
 // ─── Banner do modelo NSFW ────────────────────────────────────
@@ -99,6 +100,7 @@ export default function Step2Documents({
   onChange,
   onBack,
   onContinue,
+  continueDisabled = false,
 }: Step2DocumentsProps) {
   const nsfw = useNSFW();
   const model = nsfw.status === "ready" ? nsfw.model : null;
@@ -182,7 +184,7 @@ export default function Step2Documents({
             variant="primary"
             size="lg"
             className="flex-1"
-            disabled={!allValid || isProcessing}
+            disabled={!allValid || isProcessing || continueDisabled}
             onClick={onContinue}
           >
             {allValid

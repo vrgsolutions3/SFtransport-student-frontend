@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState as useSafeState } from "react";
+import { useMemo, useState } from "react";
 import { Check, Moon, Sun, Sunrise, TriangleAlert } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -58,7 +58,7 @@ export default function Step3Grade({
   data,
   onChange,
 }: Step3GradeProps) {
-  const [activeDay, setActiveDay] = useSafeState<string>(
+  const [activeDay, setActiveDay] = useState<string>(
     DAYS[0].short,
   );
 

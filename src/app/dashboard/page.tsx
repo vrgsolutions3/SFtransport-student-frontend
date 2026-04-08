@@ -9,13 +9,14 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardGreeting from "@/components/dashboard/DashboardGreeting";
 import ActionCard from "@/components/dashboard/ActionCard";
 import LicenseActionCard from "@/components/dashboard/LicenseActionCard";
-import { DASHBOARD_ACTIONS } from "@/constants/dashboard-actions";
+import { DASHBOARD_ACTIONS, DOCUMENTS_ACTION } from "@/constants/dashboard-actions";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
   const {
     hasLicense,
+    licenseRequest,
     loading: licenseLoading,
     isUnderReview,
     isRejected,
@@ -28,7 +29,7 @@ export default function DashboardPage() {
     if (!authLoading && !isAuthenticated) router.push("/login");
   }, [isAuthenticated, authLoading, router]);
 
-  if (authLoading || !user) {
+  if (authLoading || !user || licenseLoading) {
     return (
       <>
         <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/30">
@@ -49,6 +50,7 @@ export default function DashboardPage() {
             <div className="rounded-xl bg-surface-container-low h-22 border border-outline-variant/30" />
             <div className="rounded-xl bg-surface-container-low h-26 border border-outline-variant/30" />
             <div className="rounded-xl bg-surface-container-low h-26 border border-outline-variant/30" />
+            <div className="rounded-xl bg-surface-container-low h-26 border border-outline-variant/30" />
           </nav>
 
           <footer className="mt-12 flex flex-col items-center gap-1 opacity-30 pointer-events-none">
@@ -62,6 +64,7 @@ export default function DashboardPage() {
 
   // identifier é o email do student
   const displayName = user.name;
+  const shouldShowDocumentsCard = hasLicense || licenseRequest !== null;
 
   return (
     <>
@@ -71,34 +74,25 @@ export default function DashboardPage() {
         <DashboardGreeting name={displayName} />
 
         <nav className="flex flex-col gap-4 flex-1">
-          {licenseLoading ? (
-            <>
-              <div className="rounded-xl bg-surface-container-low h-22 border border-outline-variant/30 animate-pulse" />
-              {DASHBOARD_ACTIONS.map((action) => (
-                <div
-                  key={action.href}
-                  className="rounded-xl bg-surface-container-low h-26 border border-outline-variant/30 animate-pulse"
-                />
-              ))}
-            </>
-          ) : (
-            <>
-              <LicenseActionCard
-                loading={licenseLoading}
-                hasLicense={hasLicense}
-                isUnderReview={isUnderReview}
-                isRejected={isRejected}
-                rejectionReason={rejectionReason}
+          <>
+            <LicenseActionCard
+              loading={licenseLoading}
+              hasLicense={hasLicense}
+              isUnderReview={isUnderReview}
+              isRejected={isRejected}
+              rejectionReason={rejectionReason}
+            />
+            {shouldShowDocumentsCard && (
+              <ActionCard action={DOCUMENTS_ACTION} />
+            )}
+            {DASHBOARD_ACTIONS.filter((action) => action.href !== DOCUMENTS_ACTION.href).map((action) => (
+              <ActionCard
+                key={action.href}
+                action={action}
+                disabled={licenseLoading || (action.requiresLicense === true && !hasLicense)}
               />
-              {DASHBOARD_ACTIONS.map((action) => (
-                <ActionCard
-                  key={action.href}
-                  action={action}
-                  disabled={action.requiresLicense === true && !hasLicense}
-                />
-              ))}
-            </>
-          )}
+            ))}
+          </>
         </nav>
 
         <footer className="mt-12 flex flex-col items-center gap-1 opacity-30 pointer-events-none">
