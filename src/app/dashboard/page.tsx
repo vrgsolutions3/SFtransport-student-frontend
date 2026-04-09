@@ -68,7 +68,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <DashboardHeader onLogout={logout} onNavigateProfile={() => router.push("/dashboard/profile")} />
+      <DashboardHeader />
 
       <main className="flex flex-col flex-1 pt-24 pb-8 px-6 max-w-lg mx-auto w-full">
         <DashboardGreeting name={displayName} />

@@ -17,8 +17,14 @@ import Step3Grade, {
   Step3Data,
 } from "@/components/license-request/Step3grade";
 import ConfirmSubmitModal from "@/components/license-request/ConfirmSubmitModal";
+import RequestLicensePageSkeleton from "@/components/license-request/RequestLicenseSkeleton";
 
 import { LICENSE_DOCUMENTS } from "@/constants/license-documents";
+import {
+  deserializeDocumentEntries,
+  makeEmptyEntries,
+  serializeDocumentEntries,
+} from "@/lib/documentEntries";
 import {
   getWithTTL,
   ONE_DAY_MS,
@@ -27,6 +33,7 @@ import {
 } from "@/lib/storageWithTTL";
 
 import type { DocumentEntries } from "@/components/license-request/Step2Documents";
+import type { PersistedStep2 } from "@/lib/documentEntries";
 
 const STORAGE_KEY = "license_request_step1";
 const STORAGE_KEY_STEP2 = "license_request_step2";
@@ -42,14 +49,6 @@ const EMPTY_STEP1: Step1Data = {
 const EMPTY_STEP3: Step3Data = {
   selections: [],
 };
-
-interface PersistedDocumentEntry {
-  name: string;
-  type: string;
-  dataUrl: string;
-}
-
-type PersistedStep2 = Record<string, PersistedDocumentEntry | null>;
 
 const Step2Documents = dynamic(
   () => import("@/components/license-request/Step2Documents"),
@@ -67,98 +66,6 @@ const Step2Documents = dynamic(
     ),
   }
 );
-
-function RequestLicensePageSkeleton() {
-  return (
-    <div className="min-h-screen bg-surface">
-      <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md shadow-sm flex items-center gap-3 px-4 h-16">
-        <div className="w-9 h-9 rounded-full bg-surface-container-low animate-pulse" />
-        <div className="h-5 w-44 rounded-md bg-surface-container-low animate-pulse" />
-        <div className="ml-auto w-9 h-9 rounded-full bg-surface-container-low animate-pulse" />
-      </header>
-
-      <main className="pt-20 pb-10 px-5 max-w-lg mx-auto space-y-4 animate-pulse">
-        <div className="h-10 rounded-xl bg-surface-container-low border border-outline-variant/30" />
-        <div className="h-14 rounded-xl bg-surface-container-low border border-outline-variant/30" />
-        <div className="h-14 rounded-xl bg-surface-container-low border border-outline-variant/30" />
-        <div className="h-14 rounded-xl bg-surface-container-low border border-outline-variant/30" />
-        <div className="h-14 rounded-xl bg-surface-container-low border border-outline-variant/30" />
-      </main>
-    </div>
-  );
-}
-
-function makeEmptyEntries(): DocumentEntries {
-  return Object.fromEntries(
-    LICENSE_DOCUMENTS.map((d) => [d.photoType, null])
-  );
-}
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Falha ao ler arquivo"));
-    reader.readAsDataURL(file);
-  });
-}
-
-async function serializeDocumentEntries(
-  entries: DocumentEntries
-): Promise<PersistedStep2> {
-  const serialized: PersistedStep2 = {};
-
-  for (const doc of LICENSE_DOCUMENTS) {
-    const entry = entries[doc.photoType];
-    const source = entry?.file ?? null;
-
-    if (!source) {
-      serialized[doc.photoType] = null;
-      continue;
-    }
-
-    const dataUrl = await fileToDataUrl(source);
-    serialized[doc.photoType] = {
-      name: source.name,
-      type: source.type,
-      dataUrl,
-    };
-  }
-
-  return serialized;
-}
-
-async function dataUrlToFile(
-  dataUrl: string,
-  fileName: string,
-  type: string,
-): Promise<File> {
-  const res = await fetch(dataUrl);
-  const blob = await res.blob();
-  return new File([blob], fileName, { type });
-}
-
-async function deserializeDocumentEntries(data: PersistedStep2): Promise<DocumentEntries> {
-  const hydrated = makeEmptyEntries();
-
-  for (const doc of LICENSE_DOCUMENTS) {
-    const persisted = data[doc.photoType];
-    if (!persisted) continue;
-
-    const file = await dataUrlToFile(
-      persisted.dataUrl,
-      persisted.name,
-      persisted.type,
-    );
-    hydrated[doc.photoType] = {
-      file,
-      previewUrl: file.type.startsWith("image/") ? persisted.dataUrl : "",
-      result: null,
-    };
-  }
-
-  return hydrated;
-}
 
 export default function RequestLicensePage() {
   const router = useRouter();

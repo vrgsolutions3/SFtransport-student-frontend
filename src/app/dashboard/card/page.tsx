@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Download, LoaderCircle, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLicense } from "@/hooks/useLicense";
+import { swipeDisabledRef } from "@/components/dashboard/SwipeNavigator";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import type { License } from "@/types/license";
 
-async function splitCardImage(base64: string): Promise<{ front: string; back: string }> {
+async function splitCardImage(
+  base64: string,
+): Promise<{ front: string; back: string }> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -72,10 +75,14 @@ export default function CardPage() {
   const { license, loading, hasLicense } = useLicense({
     enabled: isAuthenticated && !authLoading,
   });
-  const [cardSides, setCardSides] = useState<{ front: string; back: string } | null>(null);
+  const [cardSides, setCardSides] = useState<{
+    front: string;
+    back: string;
+  } | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchReleaseTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!loading && !hasLicense) {
@@ -89,9 +96,20 @@ export default function CardPage() {
       setCardSides(sides);
       setActiveSlide(0);
       setLightboxOpen(false);
-      scrollRef.current?.scrollTo({ left: 0, behavior: "auto" });
     });
   }, [license]);
+
+  useEffect(() => {
+    swipeDisabledRef.current = lightboxOpen;
+
+    return () => {
+      swipeDisabledRef.current = false;
+      if (touchReleaseTimeoutRef.current !== null) {
+        window.clearTimeout(touchReleaseTimeoutRef.current);
+        touchReleaseTimeoutRef.current = null;
+      }
+    };
+  }, [lightboxOpen]);
 
   const handleDownload = () => {
     if (!license) return;
@@ -140,44 +158,46 @@ export default function CardPage() {
       </header>
 
       <main className="pt-20 pb-10 px-4 max-w-lg mx-auto">
-        {/* Frente/verso com swipe horizontal */}
+        {/* Swipe dentro da imagem troca frente/verso; fora dela o navigator segue ativo */}
         <div
-          ref={scrollRef}
-          className="mx-auto w-4/5 flex overflow-x-auto snap-x snap-mandatory scroll-smooth mb-4"
-          style={{
-            scrollbarWidth: "none",
+          className="mx-auto w-4/5 mb-4 cursor-zoom-in"
+          onClick={() => setLightboxOpen(true)}
+          onTouchStart={(e) => {
+            if (touchReleaseTimeoutRef.current !== null) {
+              window.clearTimeout(touchReleaseTimeoutRef.current);
+              touchReleaseTimeoutRef.current = null;
+            }
+            swipeDisabledRef.current = true;
+            touchStartX.current = e.touches[0]?.clientX ?? null;
           }}
-          onScroll={(e) => {
-            const el = e.currentTarget;
-            const index = Math.round(el.scrollLeft / el.offsetWidth);
-            setActiveSlide(index);
+          onTouchEnd={(e) => {
+            const startX = touchStartX.current;
+            const endX = e.changedTouches[0]?.clientX ?? null;
+
+            if (startX !== null && endX !== null) {
+              const dx = endX - startX;
+              if (Math.abs(dx) >= 40) {
+                setActiveSlide((prev) => {
+                  if (dx < 0) return Math.min(prev + 1, 1);
+                  return Math.max(prev - 1, 0);
+                });
+              }
+            }
+
+            touchStartX.current = null;
+            touchReleaseTimeoutRef.current = window.setTimeout(() => {
+              if (!lightboxOpen) swipeDisabledRef.current = false;
+              touchReleaseTimeoutRef.current = null;
+            }, 50);
           }}
         >
           {cardSides ? (
-            <>
-              <div
-                className="snap-center shrink-0 w-full cursor-zoom-in"
-                onClick={() => setLightboxOpen(true)}
-              >
-                <img
-                  src={cardSides.front}
-                  alt="Frente da carteirinha"
-                  className="w-full h-auto block"
-                  draggable={false}
-                />
-              </div>
-              <div
-                className="snap-center shrink-0 w-full cursor-zoom-in"
-                onClick={() => setLightboxOpen(true)}
-              >
-                <img
-                  src={cardSides.back}
-                  alt="Verso da carteirinha"
-                  className="w-full h-auto block"
-                  draggable={false}
-                />
-              </div>
-            </>
+            <img
+              src={activeSlide === 0 ? cardSides.front : cardSides.back}
+              alt={activeSlide === 0 ? "Frente da carteirinha" : "Verso da carteirinha"}
+              className="w-full h-auto block"
+              draggable={false}
+            />
           ) : (
             <div className="w-full flex items-center justify-center py-20">
               <LoaderCircle className="text-primary animate-spin" size={32} />
@@ -211,11 +231,7 @@ export default function CardPage() {
           {["Frente", "Verso"].map((label, i) => (
             <button
               key={label}
-              onClick={() => {
-                if (!scrollRef.current) return;
-                scrollRef.current.scrollTo({ left: i * scrollRef.current.offsetWidth, behavior: "smooth" });
-                setActiveSlide(i);
-              }}
+              onClick={() => setActiveSlide(i)}
               className={`transition-all duration-300 rounded-full ${
                 activeSlide === i
                   ? "bg-primary w-6 h-2"
@@ -234,10 +250,16 @@ export default function CardPage() {
           style={{ padding: "16px 20px" }}
         >
           <div>
-            <p className="text-on-surface-variant" style={{ fontSize: "11px", marginBottom: "4px" }}>
+            <p
+              className="text-on-surface-variant"
+              style={{ fontSize: "11px", marginBottom: "4px" }}
+            >
               Válida até
             </p>
-            <p className="font-bold text-on-surface" style={{ fontSize: "15px" }}>
+            <p
+              className="font-bold text-on-surface"
+              style={{ fontSize: "15px" }}
+            >
               {formatDate(license.expirationDate)}
             </p>
           </div>

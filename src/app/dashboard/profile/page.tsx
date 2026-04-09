@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
-import { ArrowLeft, Camera, ImageIcon,  Trash2 } from "lucide-react";
+import { ArrowLeft, Camera, ImageIcon, LogOut, Trash2 } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
 import { formatPhone } from "@/lib/formatters";
 
@@ -50,6 +51,7 @@ function getInitials(name: string): string {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
@@ -233,6 +235,14 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+        {/* Sair */}
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-3 px-5 py-4 bg-surface-container-low rounded-2xl text-error text-sm font-medium hover:bg-error-container/20 transition-all cursor-pointer"
+        >
+          <LogOut size={18} className="shrink-0" />
+          Sair da Conta
+        </button>
       </main>
 
       {/* Bottom sheet de foto */}
