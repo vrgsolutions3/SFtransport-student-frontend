@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { ButtonHTMLAttributes, forwardRef } from "react";
 import { LucideIcon, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "outline";
@@ -26,9 +27,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     return (
-      <button
+      <motion.button
         ref={ref}
         disabled={disabled || loading}
+        whileTap={{ scale: 0.97 }}
+        whileHover={{ scale: 1.01 }}
         className={cn(
           "rounded-full font-bold transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2",
           variants[variant],
@@ -36,7 +39,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           fullWidth && "w-full",
           className
         )}
-        {...props}
+        {...(props as any)}
       >
         {loading ? (
           <Loader2 className="w-5 h-5 animate-spin" />
@@ -44,7 +47,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           Icon && <Icon className="w-5 h-5" />
         )}
         {children}
-      </button>
+      </motion.button>
     );
   }
 );

@@ -14,7 +14,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const activeIndex = NAV_ITEMS.findIndex(({ href }) => href === pathname);
+  const activeIndex = Math.max(NAV_ITEMS.findIndex(({ href }) => href === pathname), 1);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-6 px-6 pointer-events-none">
