@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Download } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLicense } from "@/hooks/useLicense";
@@ -11,10 +10,9 @@ import { CardLightbox } from "@/components/dashboard/card/CardLightbox";
 import { CardStatus } from "@/components/dashboard/card/CardStatus";
 import { splitCardImage } from "@/lib/cardUtils";
 import CardSkeleton from "@/components/dashboard/card/CardSkeleton";
-
+import { CardNoLicense } from "@/components/dashboard/card/CardNoLicense";
 
 export default function CardPage() {
-  const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { license, loading, hasLicense } = useLicense({
     enabled: isAuthenticated && !authLoading,
@@ -25,12 +23,6 @@ export default function CardPage() {
   } | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-
-  useEffect(() => {
-    if (!loading && !hasLicense) {
-      router.replace("/dashboard");
-    }
-  }, [loading, hasLicense, router]);
 
   useEffect(() => {
     if (!license) return;
@@ -49,8 +41,17 @@ export default function CardPage() {
     link.click();
   };
 
-  if (loading || !license) {
-    return <CardSkeleton />
+  if (loading) {
+    return <CardSkeleton hasLicense={hasLicense} />;
+  }
+
+  if (!hasLicense || !license) {
+    return (
+      <div className="min-h-screen bg-surface">
+        <DashboardHeader title="Minha Carteirinha" />
+        <CardNoLicense />
+      </div>
+    );
   }
 
   return (

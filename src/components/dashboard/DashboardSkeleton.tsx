@@ -3,7 +3,6 @@ export default function DashboardSkeleton() {
     <>
       <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/30">
         <div className="h-15 px-4 flex items-center">
-          <div className="w-9 h-9 rounded-full bg-surface-container-low animate-pulse" />
           <div className="mx-auto h-5 w-40 rounded-md bg-surface-container-low animate-pulse" />
           <div className="w-9 h-9 rounded-full bg-surface-container-low animate-pulse" />
         </div>
