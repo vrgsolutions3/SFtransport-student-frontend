@@ -5,7 +5,7 @@ function ensureRequiredEnvVars(): void {
   const requiredKeys = [
     'NEXT_PUBLIC_API_URL',
     'API_PROXY_TARGET',
-    'SESSION_TTL_DAYS',
+    'SESSION_TTL_STUDENT_DAYS',
     'CSRF_COOKIE_NAME',
     'CSRF_HEADER_NAME',
   ];
@@ -23,7 +23,7 @@ function ensureRequiredEnvVars(): void {
     missing.push('BFF_SERVICE_SECRET ou SERVICE_SECRET');
   }
 
-  const ttl = process.env.SESSION_TTL_DAYS?.trim();
+  const ttl = process.env.SESSION_TTL_STUDENT_DAYS?.trim();
   if (ttl && !/^\d+$/.test(ttl)) {
     throw new Error('SESSION_TTL_DAYS deve conter apenas números inteiros.');
   }
