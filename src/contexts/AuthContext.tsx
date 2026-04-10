@@ -78,6 +78,11 @@ export function AuthProvider({
     isLoading: bootstrapOnMount,
   });
   const csrfRef = useRef<CsrfMeta | null>(null);
+  const pathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   const updateCsrfMeta = useCallback((payload: unknown) => {
     const csrfMeta = parseCsrfMeta(payload);
@@ -112,10 +117,10 @@ export function AuthProvider({
 
   const handleUnauthorized = useCallback(() => {
     clearSession();
-    if (!isPublicPath(pathname)) {
+    if (!isPublicPath(pathnameRef.current)) {
       router.push("/login");
     }
-  }, [clearSession, pathname, router]);
+  }, [clearSession, router]);
 
   useEffect(() => {
     resetApiClientState();
@@ -129,6 +134,8 @@ export function AuthProvider({
     }
 
     let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
 
     (async () => {
       try {
@@ -136,6 +143,7 @@ export function AuthProvider({
           method: "GET",
           credentials: "include",
           cache: "no-store",
+          signal: controller.signal,
         });
 
         const payload = await res.json().catch(() => ({}));
@@ -160,15 +168,18 @@ export function AuthProvider({
       } catch {
         if (!cancelled) {
           clearSession();
-          if (!isPublicPath(pathname)) {
+          if (!isPublicPath(pathnameRef.current)) {
             router.replace("/login");
           }
         }
+      } finally {
+        clearTimeout(timeoutId);
       }
     })();
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [bootstrapOnMount, clearSession, pathname, router, updateCsrfMeta]);
 
