@@ -30,11 +30,4 @@ export const DASHBOARD_ACTIONS: DashboardAction[] = [
     variant: "primary",
     requiresLicense: true,
   },
-  {
-    href: "/dashboard/profile",
-    title: "Alteração de informações",
-    description: "Editar perfil e preferências",
-    icon: UserCog,
-    variant: "surface",
-  },
 ];

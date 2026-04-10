@@ -13,9 +13,9 @@ function buildTargetUrl(path: string[], search: string): string {
 }
 
 async function proxy(request: NextRequest, path: string[]) {
-  if (path[0] === "auth") {
+  if (path[0] === 'auth') {
     return NextResponse.json(
-      { message: "Use /api/auth/* para operações de autenticação." },
+      { message: 'Use /api/auth/* para operações de autenticação.' },
       { status: 404 },
     );
   }
@@ -24,36 +24,70 @@ async function proxy(request: NextRequest, path: string[]) {
   const targetUrl = buildTargetUrl(path, request.nextUrl.search);
 
   const headers = new Headers();
-  const incomingContentType = request.headers.get("content-type");
-  const incomingAccept = request.headers.get("accept");
+  const incomingContentType = request.headers.get('content-type');
+  const incomingAccept = request.headers.get('accept');
 
-  if (incomingContentType) headers.set("content-type", incomingContentType);
-  if (incomingAccept) headers.set("accept", incomingAccept);
+  if (incomingContentType) headers.set('content-type', incomingContentType);
+  if (incomingAccept) headers.set('accept', incomingAccept);
 
-  headers.set("x-service-secret", getServiceSecret());
-  if (sid) {
-    headers.set("x-session-id", sid);
-  }
+  headers.set('x-service-secret', getServiceSecret());
+  if (sid) headers.set('x-session-id', sid);
 
   const method = request.method.toUpperCase();
-  const canHaveBody = method !== "GET" && method !== "HEAD";
+  const canHaveBody = method !== 'GET' && method !== 'HEAD';
   const payload = canHaveBody ? await request.arrayBuffer() : undefined;
 
-  const upstream = await fetch(targetUrl, {
-    method,
-    headers,
-    body: payload,
-    cache: "no-store",
-  });
+  // ✅ Timeout de 30s para uploads pesados (documentos/imagens)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
-  const responseHeaders = new Headers();
-  const upstreamType = upstream.headers.get("content-type");
-  if (upstreamType) responseHeaders.set("content-type", upstreamType);
+  try {
+    const upstream = await fetch(targetUrl, {
+      method,
+      headers,
+      body: payload,
+      cache: 'no-store',
+      signal: controller.signal,
+    });
 
-  return new NextResponse(upstream.body, {
-    status: upstream.status,
-    headers: responseHeaders,
-  });
+    const responseHeaders = new Headers();
+    const upstreamType = upstream.headers.get('content-type');
+    if (upstreamType) responseHeaders.set('content-type', upstreamType);
+
+    return new NextResponse(upstream.body, {
+      status: upstream.status,
+      headers: responseHeaders,
+    });
+  } catch (err: unknown) {
+    const isAbort = err instanceof DOMException && err.name === 'AbortError';
+    const isReset =
+      typeof err === 'object' &&
+      err !== null &&
+      'cause' in err &&
+      typeof (err as { cause?: unknown }).cause === 'object' &&
+      (err as { cause?: { code?: string } }).cause?.code === 'ECONNRESET';
+
+    if (isAbort) {
+      return NextResponse.json(
+        { message: 'O servidor demorou muito para responder. Tente novamente.' },
+        { status: 504 },
+      );
+    }
+
+    if (isReset) {
+      return NextResponse.json(
+        { message: 'Conexão interrompida durante o envio. Tente novamente.' },
+        { status: 502 },
+      );
+    }
+
+    return NextResponse.json(
+      { message: 'Erro interno ao processar a requisição.' },
+      { status: 500 },
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function GET(

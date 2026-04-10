@@ -55,7 +55,7 @@ export function RegisterForm() {
     return false;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
     setLoading(true);

@@ -53,20 +53,65 @@ function getConnectSrcDirective(): string {
 }
 
 function buildContentSecurityPolicy(): string {
-  return [
+  const isDev = process.env.NODE_ENV === 'development';
+
+  const directives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval'",
-    "style-src 'self' 'unsafe-inline'",
+    // Em dev: unsafe-inline necessário pelo Turbopack/Next.js HMR
+    // Em prod: remover unsafe-inline e usar nonce (implementação futura)
+    isDev
+      ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
+      : "script-src 'self' 'unsafe-eval'",
+    "style-src 'self' 'unsafe-inline' https://use.typekit.net",
     "img-src 'self' data: blob: https:",
     `connect-src ${getConnectSrcDirective()}`,
-    "font-src 'self'",
+    "font-src 'self' data: https://use.typekit.net",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
+    "frame-src 'self' data: blob:",
     "frame-ancestors 'none'",
-    'upgrade-insecure-requests',
-  ].join('; ');
+  ];
+
+  if (!isDev) {
+    directives.push('upgrade-insecure-requests');
+  }
+
+  return directives.join('; ');
 }
+
+const offlineRuntimeCaching = [
+  {
+    urlPattern: /\/dashboard(?:\/card)?\/?$/,
+    handler: 'NetworkFirst',
+    options: {
+      cacheName: 'pages-dashboard',
+      networkTimeoutSeconds: 5,
+      expiration: {
+        maxEntries: 10,
+        maxAgeSeconds: 7 * 24 * 60 * 60, // 1 semana
+      },
+      cacheableResponse: {
+        statuses: [200],
+      },
+    },
+  },
+  {
+    urlPattern: /\/api\/(auth\/session|v1\/license\/me|v1\/license-request\/me)$/,
+    handler: 'NetworkFirst',
+    options: {
+      cacheName: 'api-student-session',
+      networkTimeoutSeconds: 5,
+      expiration: {
+        maxEntries: 20,
+        maxAgeSeconds: 24 * 60 * 60, // 1 dia
+      },
+      cacheableResponse: {
+        statuses: [200],
+      },
+    },
+  },
+];
 
 const nextConfig: NextConfig = {
   turbopack: {},
@@ -109,5 +154,6 @@ export default withPWA({
   register: true,
   workboxOptions: {
     skipWaiting: true,
+    runtimeCaching: offlineRuntimeCaching,
   },
 })(nextConfig);

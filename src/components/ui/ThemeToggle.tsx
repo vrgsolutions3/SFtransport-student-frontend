@@ -22,7 +22,7 @@ export function ThemeToggle({ className = "" }: ThemeToggleProps) {
   return (
     <button
       onClick={toggle}
-      className={`p-2 rounded-full transition-colors active:scale-95 ${className}`}
+      className={`cursor-pointer p-2 rounded-full transition-colors active:scale-95 ${className}`}
       title={title}
       aria-label={ariaLabel}
     >

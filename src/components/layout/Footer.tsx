@@ -9,7 +9,7 @@ export function Footer() {
         
         {/* Lado Esquerdo */}
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 opacity-60 grayscale hover:grayscale-0 transition-all">
+          <div className="w-10 h-10 opacity-60 grayscale transition-all">
             <Landmark className="text-primary w-full h-full" />
           </div>
           <div>
@@ -41,15 +41,6 @@ export function Footer() {
         </p>
       </div>
 
-      
-      <div className="max-w-7xl mx-auto mt-2 pt-4">
-        <p className="font-label text-[10px] text-outline text-center">
-
-          <a href="https://vrg.com.br" target="_blank" rel="noopener noreferrer">
-            Criado por <span className="font-bold text-on-surface-variant">VRG</span>
-          </a>
-        </p>
-      </div>
     </footer>
   );
 }

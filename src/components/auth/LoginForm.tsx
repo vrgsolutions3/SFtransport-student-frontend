@@ -20,21 +20,27 @@ export function LoginForm() {
   const validateForm = () => {
     const result = loginCredentialsSchema.safeParse(formData);
 
-    if (result.success) {
-      setErrors({ email: "", password: "", general: "" });
-      return true;
+    if (!formData.email) {
+      newErrors.email = "Email é obrigatório";
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Email inválido";
+      isValid = false;
     }
 
-    const fieldErrors = getFieldErrors(result.error);
-    setErrors({
-      email: fieldErrors.email ?? "",
-      password: fieldErrors.password ?? "",
-      general: "",
-    });
-    return false;
+    if (!formData.password) {
+      newErrors.password = "Senha é obrigatória";
+      isValid = false;
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Senha deve ter no mínimo 8 caracteres";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
     setLoading(true);
