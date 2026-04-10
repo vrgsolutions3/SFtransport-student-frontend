@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { BusFront } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLicense } from "@/hooks/useLicense";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -95,12 +94,7 @@ export default function DashboardPage() {
           </>
         </nav>
 
-        <footer className="mt-12 flex flex-col items-center gap-1 opacity-30 pointer-events-none">
-          <BusFront className="text-primary w-10 h-10" strokeWidth={2.5} aria-hidden="true" />
-          <p className="font-headline font-extrabold uppercase tracking-widest text-[10px] text-on-surface">
-            Prefeitura de São Fidélis
-          </p>
-        </footer>
+       
       </main>
     </>
   );
