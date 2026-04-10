@@ -36,12 +36,27 @@ export function getServiceSecret(): string {
   return secret.trim();
 }
 
-export function getSidMaxAgeSeconds(): number {
-  const raw = getRequiredEnv("SESSION_TTL_DAYS");
+function parseTtlDays(raw: string, envName: string): number {
   if (!/^\d+$/.test(raw)) {
-    throw new Error("SESSION_TTL_DAYS deve conter apenas números inteiros.");
+    throw new Error(`${envName} deve conter apenas números inteiros.`);
   }
 
   const days = Number(raw);
+  if (days <= 0) {
+    throw new Error(`${envName} deve ser maior que zero.`);
+  }
+
+  return days;
+}
+
+export function getSidMaxAgeSeconds(): number {
+  const studentRaw = process.env.SESSION_TTL_STUDENT_DAYS?.trim();
+  const legacyRaw = process.env.SESSION_TTL_DAYS?.trim();
+  const days = studentRaw
+    ? parseTtlDays(studentRaw, "SESSION_TTL_STUDENT_DAYS")
+    : legacyRaw
+      ? parseTtlDays(legacyRaw, "SESSION_TTL_DAYS")
+      : 3;
+
   return days * 24 * 60 * 60;
 }
