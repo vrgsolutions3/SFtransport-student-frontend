@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ArrowLeft, Camera, ImageIcon, LogOut, Trash2 } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
 import { formatPhone } from "@/lib/formatters";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 
 const SHIFT_OPTIONS = [
   { value: "Manhã", label: "Manhã" },
@@ -139,18 +140,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-surface">
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md shadow-sm flex items-center gap-3 px-4 h-16">
-        <button
-          onClick={() => router.back()}
-          className="p-2 rounded-full hover:bg-surface-container-low transition-colors active:scale-95"
-        >
-          <ArrowLeft className="text-on-surface" size={20} />
-        </button>
-        <h1 className="font-headline font-bold text-on-surface text-lg flex-1">
-          Meu Perfil
-        </h1>
-        <ThemeToggle className="text-on-surface-variant hover:bg-surface-container-low" />
-      </header>
+      <DashboardHeader title="Meu Perfil" />
 
       <main className="pt-20 pb-10 px-5 max-w-lg mx-auto">
         {/* Card de perfil */}

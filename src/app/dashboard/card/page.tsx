@@ -8,6 +8,7 @@ import { useLicense } from "@/hooks/useLicense";
 import { swipeDisabledRef } from "@/components/dashboard/SwipeNavigator";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import type { License } from "@/types/license";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 
 async function splitCardImage(
   base64: string,
@@ -144,18 +145,7 @@ export default function CardPage() {
 
   return (
     <div className="min-h-screen bg-surface">
-      <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/30 flex items-center gap-3 px-4 h-16">
-        <button
-          onClick={() => router.back()}
-          className="p-2 rounded-full hover:bg-surface-container-low transition-colors active:scale-95"
-        >
-          <ArrowLeft className="text-on-surface" size={20} />
-        </button>
-        <h1 className="font-headline font-bold text-on-surface text-lg flex-1">
-          Minha Carteirinha
-        </h1>
-        <ThemeToggle className="text-on-surface-variant hover:bg-surface-container-low" />
-      </header>
+      <DashboardHeader title="Minha Carteirinha" />
 
       <main className="pt-20 pb-10 px-4 max-w-lg mx-auto">
         {/* Swipe dentro da imagem troca frente/verso; fora dela o navigator segue ativo */}

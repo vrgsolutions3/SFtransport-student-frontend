@@ -8,7 +8,7 @@ interface AuthHeaderProps {
   description?: string;
 }
 
-export function AuthHeader({ title, description }: AuthHeaderProps) {
+export function AuthHeader({ title = "São Fidélis Transporte", description }: AuthHeaderProps) {
   return (
     <header className="relative bg-primary pt-16 pb-16 px-6 overflow-hidden">
 
@@ -26,7 +26,7 @@ export function AuthHeader({ title, description }: AuthHeaderProps) {
         </div>
 
         <h1 className="text-white text-2xl font-extrabold tracking-tight mb-3 w-full truncate">
-          {title ?? "São Fidélis Transporte"}
+          {title}
         </h1>
         <p className="text-white/90 text-sm max-w-65 leading-relaxed font-medium">
           {description}
