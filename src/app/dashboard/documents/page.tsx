@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { AlertCircle, ArrowLeft, Download, FileText, FolderOpen, ImageIcon, X } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { apiClient } from "@/lib/apiClient";
@@ -106,19 +107,18 @@ function DocumentsPageContent() {
   const [loading, setLoading] = useState(true);
   const [images, setImages] = useState<StudentImage[]>([]);
   const [preview, setPreview] = useState<{ src: string; isPdf: boolean; title: string } | null>(null);
-  const [showRejectedBanner, setShowRejectedBanner] = useState(true);
+  const [dismissedRejectedKey, setDismissedRejectedKey] = useState<string | null>(null);
   const [showUpdatedBanner, setShowUpdatedBanner] = useState(
     () => searchParams.get("updated") === "true",
   );
 
   const hasRejectedUpdateRequest =
     licenseRequest?.type === "update" && licenseRequest?.status === "rejected";
-
-  useEffect(() => {
-    if (hasRejectedUpdateRequest) {
-      setShowRejectedBanner(true);
-    }
-  }, [hasRejectedUpdateRequest, licenseRequest?.rejectionReason]);
+  const rejectedBannerKey = hasRejectedUpdateRequest
+    ? `${licenseRequest?.rejectionReason ?? "sem-motivo"}`
+    : null;
+  const showRejectedBanner =
+    hasRejectedUpdateRequest && dismissedRejectedKey !== rejectedBannerKey;
 
   useEffect(() => {
     if (!showUpdatedBanner) return;
@@ -235,7 +235,7 @@ function DocumentsPageContent() {
             </div>
             <button
               type="button"
-              onClick={() => setShowRejectedBanner(false)}
+              onClick={() => setDismissedRejectedKey(rejectedBannerKey)}
               className="p-1 rounded-md hover:bg-error/10 transition-colors"
               aria-label="Fechar aviso"
             >
@@ -313,13 +313,16 @@ function DocumentsPageContent() {
                       <button
                         type="button"
                         onClick={() => setPreview({ src, isPdf: false, title })}
-                        className="w-full h-48 bg-white"
+                        className="relative w-full h-48 bg-white"
                         aria-label={`Visualizar ${title}`}
                       >
-                        <img
+                        <Image
                           src={src}
                           alt={title}
-                          className="w-full h-full object-contain"
+                          fill
+                          unoptimized
+                          sizes="100vw"
+                          className="object-contain"
                         />
                       </button>
                     )}
@@ -393,11 +396,16 @@ function DocumentsPageContent() {
             >
               <X size={20} className="text-white" />
             </button>
-            <img
-              src={preview.src}
-              alt={preview.title}
-              className="max-w-full max-h-[90vh] object-contain"
-            />
+            <div className="relative w-full h-[90vh] max-w-5xl">
+              <Image
+                src={preview.src}
+                alt={preview.title}
+                fill
+                unoptimized
+                sizes="100vw"
+                className="object-contain"
+              />
+            </div>
           </div>
         )
       )}

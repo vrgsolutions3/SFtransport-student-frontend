@@ -2,22 +2,15 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 import { ArrowLeft, Camera, ImageIcon,  Trash2 } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
 import { formatPhone } from "@/lib/formatters";
 
-const SHIFT_OPTIONS = [
-  { value: "Manhã", label: "Manhã" },
-  { value: "Tarde", label: "Tarde" },
-  { value: "Noite", label: "Noite" },
-  { value: "Integral", label: "Integral" },
-];
-
-const BLOOD_TYPE_OPTIONS = [
-  "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-",
-];
+const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const ALLOWED_PROFILE_PHOTO_TYPES = ["image/jpeg", "image/png"];
 
 interface StudentProfile {
   name: string;
@@ -53,6 +46,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -77,9 +71,30 @@ export default function ProfilePage() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  const validateProfilePhoto = (file: File): string | null => {
+    if (!ALLOWED_PROFILE_PHOTO_TYPES.includes(file.type)) {
+      return "Apenas imagens JPEG e PNG são permitidas.";
+    }
+
+    if (file.size > MAX_PROFILE_PHOTO_SIZE_BYTES) {
+      return "O arquivo deve ter no máximo 5MB.";
+    }
+
+    return null;
+  };
+
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const validationError = validateProfilePhoto(file);
+    if (validationError) {
+      setPhotoError(validationError);
+      e.target.value = "";
+      return;
+    }
+
+    setPhotoError(null);
     setPhotoSheetOpen(false);
     const formData = new FormData();
     formData.append("photo", file);
@@ -153,12 +168,15 @@ export default function ProfilePage() {
       <main className="pt-20 pb-10 px-5 max-w-lg mx-auto">
         {/* Card de perfil */}
         <div className="bg-primary rounded-2xl p-5 mb-6">
-          <div className="w-20 h-20 rounded-full bg-white/20 border-2 border-white/30 flex items-center justify-center overflow-hidden mx-auto mb-3">
+          <div className="relative w-20 h-20 rounded-full bg-white/20 border-2 border-white/30 flex items-center justify-center overflow-hidden mx-auto mb-3">
             {profile.photo ? (
-              <img
+              <Image
                 src={profile.photo}
                 alt="Foto de perfil"
-                className="w-full h-full object-cover"
+                fill
+                unoptimized
+                sizes="80px"
+                className="object-cover"
               />
             ) : (
               <span className="text-2xl font-bold text-white">
@@ -178,6 +196,9 @@ export default function ProfilePage() {
               Alterar foto
             </button>
           </div>
+          {photoError && (
+            <p className="text-xs text-error-container text-center mt-3">{photoError}</p>
+          )}
         </div>
 
         {/* Dados Acadêmicos */}

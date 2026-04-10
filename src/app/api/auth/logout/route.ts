@@ -5,8 +5,13 @@ import {
   getServiceSecret,
   SID_COOKIE_NAME,
 } from "@/lib/server/bff-auth";
+import { validateCsrfToken } from "@/lib/server/csrf";
 
 export async function POST(request: NextRequest) {
+  if (!(await validateCsrfToken(request))) {
+    return NextResponse.json({ message: "Invalid CSRF token" }, { status: 403 });
+  }
+
   const sid = request.cookies.get(SID_COOKIE_NAME)?.value;
 
   try {
@@ -32,7 +37,7 @@ export async function POST(request: NextRequest) {
   response.cookies.set(SID_COOKIE_NAME, "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     path: "/",
     maxAge: 0,
   });

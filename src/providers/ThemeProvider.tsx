@@ -20,6 +20,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       return "light";
     }
 
+    // Valida contra allowlist antes de usar valor persistido no localStorage.
     const saved = localStorage.getItem("theme");
     if (saved === "light" || saved === "dark") {
       return saved;

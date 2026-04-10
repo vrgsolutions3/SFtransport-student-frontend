@@ -5,12 +5,19 @@ import {
   getServiceSecret,
   SID_COOKIE_NAME,
 } from "@/lib/server/bff-auth";
+import { getCsrfHeaderName, setCsrfCookie } from "@/lib/server/csrf";
 
 export async function GET(request: NextRequest) {
+  const csrfToken = await setCsrfCookie();
+  const csrf = {
+    headerName: getCsrfHeaderName(),
+    token: csrfToken,
+  };
+
   const sid = request.cookies.get(SID_COOKIE_NAME)?.value;
 
   if (!sid) {
-    return NextResponse.json({ message: "Sessão não encontrada." }, { status: 401 });
+    return NextResponse.json({ message: "Sessão não encontrada.", csrf }, { status: 401 });
   }
 
   const baseHeaders: HeadersInit = {
@@ -26,11 +33,11 @@ export async function GET(request: NextRequest) {
     });
 
     if (!meRes.ok) {
-      const response = NextResponse.json({ message: "Sessão inválida." }, { status: 401 });
+      const response = NextResponse.json({ message: "Sessão inválida.", csrf }, { status: 401 });
       response.cookies.set(SID_COOKIE_NAME, "", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        sameSite: "strict",
         path: "/",
         maxAge: 0,
       });
@@ -40,7 +47,10 @@ export async function GET(request: NextRequest) {
     const meData = await meRes.json();
 
     if (meData?.userType !== "student") {
-      return NextResponse.json({ message: "Tipo de usuário não suportado neste frontend." }, { status: 403 });
+      return NextResponse.json(
+        { message: "Tipo de usuário não suportado neste frontend.", csrf },
+        { status: 403 },
+      );
     }
 
     const profileRes = await fetch(`${getBackendApiBaseUrl()}/student/me`, {
@@ -56,11 +66,15 @@ export async function GET(request: NextRequest) {
     const name = typeof profileData?.name === "string" ? profileData.name : "Estudante";
 
     if (!userId) {
-      return NextResponse.json({ message: "Resposta inválida ao carregar sessão." }, { status: 502 });
+      return NextResponse.json(
+        { message: "Resposta inválida ao carregar sessão.", csrf },
+        { status: 502 },
+      );
     }
 
     return NextResponse.json({
       ok: true,
+      csrf,
       user: {
         id: userId,
         role: "student",
@@ -69,6 +83,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch {
-    return NextResponse.json({ message: "Falha ao carregar sessão." }, { status: 500 });
+    return NextResponse.json({ message: "Falha ao carregar sessão.", csrf }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -13,8 +14,12 @@ import type {
   AuthUser,
   RegisterResponse,
   MessageResponse,
-  SessionAuthResponse,
 } from "@/types/auth";
+import {
+  parseCsrfMeta,
+  registerPayloadSchema,
+  sessionAuthResponseSchema,
+} from "@/lib/validation/auth";
 
 interface AuthState {
   user: AuthUser | null;
@@ -44,6 +49,11 @@ interface AuthContextValue extends AuthState {
   ) => Promise<{ success: true } | { success: false; error: string }>;
 }
 
+interface CsrfMeta {
+  headerName: string;
+  token: string;
+}
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const PUBLIC_PATHS = ["/login", "/register", "/verify-email", "/verify"];
@@ -67,6 +77,34 @@ export function AuthProvider({
     isAuthenticated: false,
     isLoading: bootstrapOnMount,
   });
+  const csrfRef = useRef<CsrfMeta | null>(null);
+
+  const updateCsrfMeta = useCallback((payload: unknown) => {
+    const csrfMeta = parseCsrfMeta(payload);
+    if (csrfMeta) {
+      csrfRef.current = csrfMeta;
+    }
+  }, []);
+
+  const ensureCsrf = useCallback(async (forceRefresh = false): Promise<CsrfMeta | null> => {
+    if (!forceRefresh && csrfRef.current) {
+      return csrfRef.current;
+    }
+
+    try {
+      const res = await fetch("/api/auth/session", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      updateCsrfMeta(payload);
+      return csrfRef.current;
+    } catch {
+      return null;
+    }
+  }, [updateCsrfMeta]);
 
   const clearSession = useCallback(() => {
     setState({ user: null, isAuthenticated: false, isLoading: false });
@@ -100,15 +138,21 @@ export function AuthProvider({
           cache: "no-store",
         });
 
+        const payload = await res.json().catch(() => ({}));
+        updateCsrfMeta(payload);
+
         if (!res.ok) {
           throw new Error("No session");
         }
 
-        const data: SessionAuthResponse = await res.json();
+        const sessionResult = sessionAuthResponseSchema.safeParse(payload);
+        if (!sessionResult.success) {
+          throw new Error("Invalid session response");
+        }
 
         if (!cancelled) {
           setState({
-            user: data.user,
+            user: sessionResult.data.user,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -126,18 +170,47 @@ export function AuthProvider({
     return () => {
       cancelled = true;
     };
-  }, [bootstrapOnMount, clearSession, pathname, router]);
+  }, [bootstrapOnMount, clearSession, pathname, router, updateCsrfMeta]);
 
   const authFetch = useCallback(
     async (
       url: string,
       options: RequestInit,
     ): Promise<{ ok: boolean; data: unknown; status: number }> => {
-      const res = await fetch(url, options);
-      const data = await res.json().catch(() => ({}));
-      return { ok: res.ok, data, status: res.status };
+      const method = (options.method ?? "GET").toUpperCase();
+      const requiresCsrf = method !== "GET" && method !== "HEAD";
+
+      const execute = async (): Promise<{ res: Response; data: unknown }> => {
+        const headers = new Headers(options.headers ?? {});
+
+        if (requiresCsrf) {
+          const csrfMeta = await ensureCsrf();
+          if (csrfMeta) {
+            headers.set(csrfMeta.headerName, csrfMeta.token);
+          }
+        }
+
+        const res = await fetch(url, {
+          ...options,
+          headers,
+          credentials: options.credentials ?? "include",
+        });
+
+        const data = await res.json().catch(() => ({}));
+        updateCsrfMeta(data);
+        return { res, data };
+      };
+
+      let result = await execute();
+
+      if (requiresCsrf && result.res.status === 403) {
+        await ensureCsrf(true);
+        result = await execute();
+      }
+
+      return { ok: result.res.ok, data: result.data, status: result.res.status };
     },
-    [],
+    [ensureCsrf, updateCsrfMeta],
   );
 
   const login = useCallback(
@@ -161,9 +234,12 @@ export function AuthProvider({
           };
         }
 
-        const authData = data as SessionAuthResponse;
+        const sessionResult = sessionAuthResponseSchema.safeParse(data);
+        if (!sessionResult.success) {
+          return { success: false, error: "Resposta de login invalida" };
+        }
 
-        setState({ user: authData.user, isAuthenticated: true, isLoading: false });
+        setState({ user: sessionResult.data.user, isAuthenticated: true, isLoading: false });
         return { success: true };
       } catch {
         return { success: false, error: "Falha ao realizar login" };
@@ -174,9 +250,8 @@ export function AuthProvider({
 
   const logout = useCallback(async () => {
     try {
-      await fetch("/api/auth/logout", {
+      await authFetch("/api/auth/logout", {
         method: "POST",
-        credentials: "include",
       });
     } catch {
       // Logout é idempotente por contrato.
@@ -184,7 +259,7 @@ export function AuthProvider({
       clearSession();
       router.push("/login");
     }
-  }, [clearSession, router]);
+  }, [authFetch, clearSession, router]);
 
   const register = useCallback(
     async (data: {
@@ -197,11 +272,16 @@ export function AuthProvider({
       { success: true; isInstitutional: boolean } | { success: false; error: string }
     > => {
       try {
+        const payloadResult = registerPayloadSchema.safeParse(data);
+        if (!payloadResult.success) {
+          return { success: false, error: "Dados de cadastro invalidos" };
+        }
+
         const { ok, data: payloadData } = await authFetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify(data),
+          body: JSON.stringify(payloadResult.data),
         });
 
         const payload = payloadData as Partial<RegisterResponse> & {
@@ -247,8 +327,12 @@ export function AuthProvider({
           };
         }
 
-        const authData = data as SessionAuthResponse;
-        setState({ user: authData.user, isAuthenticated: true, isLoading: false });
+        const sessionResult = sessionAuthResponseSchema.safeParse(data);
+        if (!sessionResult.success) {
+          return { success: false, error: "Resposta de verificacao invalida" };
+        }
+
+        setState({ user: sessionResult.data.user, isAuthenticated: true, isLoading: false });
 
         return { success: true };
       } catch {

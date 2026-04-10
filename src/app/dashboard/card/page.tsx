@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import NextImage from "next/image";
 import { ArrowLeft, Download, LoaderCircle, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLicense } from "@/hooks/useLicense";
@@ -159,9 +160,12 @@ export default function CardPage() {
                 className="snap-center shrink-0 w-full cursor-zoom-in"
                 onClick={() => setLightboxOpen(true)}
               >
-                <img
+                <NextImage
                   src={cardSides.front}
                   alt="Frente da carteirinha"
+                  width={768}
+                  height={1216}
+                  unoptimized
                   className="w-full h-auto block"
                   draggable={false}
                 />
@@ -170,9 +174,12 @@ export default function CardPage() {
                 className="snap-center shrink-0 w-full cursor-zoom-in"
                 onClick={() => setLightboxOpen(true)}
               >
-                <img
+                <NextImage
                   src={cardSides.back}
                   alt="Verso da carteirinha"
+                  width={768}
+                  height={1216}
+                  unoptimized
                   className="w-full h-auto block"
                   draggable={false}
                 />
@@ -197,9 +204,12 @@ export default function CardPage() {
             >
               <X className="text-on-surface" size={22} />
             </button>
-            <img
+            <NextImage
               src={activeSlide === 0 ? cardSides.front : cardSides.back}
               alt="Carteirinha ampliada"
+              width={768}
+              height={1216}
+              unoptimized
               className="w-full max-w-sm h-auto"
               draggable={false}
               onClick={(e) => e.stopPropagation()}

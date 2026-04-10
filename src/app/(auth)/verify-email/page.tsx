@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
 import { BadgeCheck, Pin } from "lucide-react";
 import { AuthHeader } from "@/components/auth/AuthHeader";
+import { verifyEmailSchema } from "@/lib/validation/auth";
 
 function VerifyEmailForm() {
   const router = useRouter();
@@ -20,13 +21,15 @@ function VerifyEmailForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code || code.length !== 6) {
-      setError("Digite o código de 6 dígitos");
+    const payloadResult = verifyEmailSchema.safeParse({ email, code });
+    if (!payloadResult.success) {
+      const firstIssue = payloadResult.error.issues[0]?.message ?? "Dados de verificacao invalidos";
+      setError(firstIssue);
       return;
     }
     setLoading(true);
     try {
-      const result = await verifyEmail(email, code);
+      const result = await verifyEmail(payloadResult.data.email, payloadResult.data.code);
       if (result.success) {
         router.push("/dashboard");
       } else {
