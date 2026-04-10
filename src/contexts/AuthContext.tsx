@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -68,16 +69,21 @@ export function AuthProvider({
     isLoading: bootstrapOnMount,
   });
 
+  const pathnameRef = useRef(pathname);
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
   const clearSession = useCallback(() => {
     setState({ user: null, isAuthenticated: false, isLoading: false });
   }, []);
 
   const handleUnauthorized = useCallback(() => {
     clearSession();
-    if (!isPublicPath(pathname)) {
+    if (!isPublicPath(pathnameRef.current)) {
       router.push("/login");
     }
-  }, [clearSession, pathname, router]);
+  }, [clearSession, router]);
 
   useEffect(() => {
     resetApiClientState();
@@ -91,6 +97,8 @@ export function AuthProvider({
     }
 
     let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
 
     (async () => {
       try {
@@ -98,6 +106,7 @@ export function AuthProvider({
           method: "GET",
           credentials: "include",
           cache: "no-store",
+          signal: controller.signal,
         });
 
         if (!res.ok) {
@@ -116,17 +125,20 @@ export function AuthProvider({
       } catch {
         if (!cancelled) {
           clearSession();
-          if (!isPublicPath(pathname)) {
+          if (!isPublicPath(pathnameRef.current)) {
             router.replace("/login");
           }
         }
+      } finally {
+        clearTimeout(timeoutId);
       }
     })();
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [bootstrapOnMount, clearSession, pathname, router]);
+  }, [bootstrapOnMount, clearSession, router]);
 
   const authFetch = useCallback(
     async (
