@@ -10,9 +10,13 @@ const NAV_ITEMS = [
   { icon: UserRound, href: "/dashboard/profile", label: "Perfil" },
 ];
 
+const SHOW_ON = ["/dashboard/card", "/dashboard", "/dashboard/profile"];
+
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
+
+  if (!SHOW_ON.includes(pathname)) return null;
 
   const activeIndex = (() => {
     if (pathname === "/dashboard/card") return 0;
