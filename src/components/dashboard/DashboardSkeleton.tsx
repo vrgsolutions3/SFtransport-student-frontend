@@ -18,7 +18,6 @@ export default function DashboardSkeleton() {
           <div className="rounded-xl bg-surface-container-low h-22 border border-outline-variant/30" />
           <div className="rounded-xl bg-surface-container-low h-26 border border-outline-variant/30" />
           <div className="rounded-xl bg-surface-container-low h-26 border border-outline-variant/30" />
-          <div className="rounded-xl bg-surface-container-low h-26 border border-outline-variant/30" />
         </nav>
 
         <footer className="mt-12 flex flex-col items-center gap-1 opacity-30 pointer-events-none">
