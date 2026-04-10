@@ -225,7 +225,7 @@ export default function UpdateDocumentsRequestPage() {
             isProcessing={isProcessing}
             submitting={submitting}
             onFileSelect={(index, file, validateRatio) =>
-              setFile(index, file, validateRatio)
+              setFile(index, file, validateRatio ?? false)
             }
             onRemove={removeEntry}
           />
