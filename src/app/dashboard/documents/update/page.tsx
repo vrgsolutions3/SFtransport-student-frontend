@@ -6,9 +6,9 @@ import dynamic from "next/dynamic";
 import { AlertCircle, ArrowLeft, ArrowRight, CheckSquare, Send, Square } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Button } from "@/components/ui/Button";
-import StepIndicator from "@/components/license-request/StepIndicator";
-import DocumentUpload from "@/components/license-request/DocumentUpload";
-import { type Step3Data } from "@/components/license-request/Step3grade";
+import StepIndicator from "@/components/dashboard/license-request/StepIndicator";
+import DocumentUpload from "@/components/dashboard/license-request/DocumentUpload";
+import { type Step3Data } from "@/components/dashboard/license-request/Step3grade";
 import { LICENSE_DOCUMENTS, type DocumentConfig } from "@/constants/license-documents";
 import { useNSFW } from "@/hooks/useNSFW";
 import { useImageProcessor } from "@/hooks/useImageProcessor";
@@ -24,7 +24,7 @@ type StudentImageListItem = {
 const STEP_LABELS_TWO = ["Seleção", "Documentos"];
 const STEP_LABELS_THREE = ["Seleção", "Documentos", "Grade"];
 
-const Step3GradeNoSSR = dynamic(() => import("@/components/license-request/Step3grade"), {
+const Step3GradeNoSSR = dynamic(() => import("@/components/dashboard/license-request/Step3grade"), {
   ssr: false,
 });
 

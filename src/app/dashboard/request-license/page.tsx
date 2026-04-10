@@ -1,24 +1,22 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ArrowLeft, ArrowRight, AlertCircle, Send } from "lucide-react";
-
+import { ArrowLeft } from "lucide-react";
 import { api } from "@/lib/api";
-import { Button } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useLicense } from "@/hooks/useLicense";
-import StepIndicator from "@/components/license-request/StepIndicator";
+import StepIndicator from "@/components/dashboard/license-request/StepIndicator";
 import Step1InfoForm, {
   Step1Data,
-} from "@/components/license-request/Step1InfoForm";
+} from "@/components/dashboard/license-request/Step1InfoForm";
 import Step3Grade, {
   Step3Data,
-} from "@/components/license-request/Step3grade";
-import ConfirmSubmitModal from "@/components/license-request/ConfirmSubmitModal";
-import RequestLicensePageSkeleton from "@/components/license-request/RequestLicenseSkeleton";
-
+} from "@/components/dashboard/license-request/Step3grade";
+import ConfirmSubmitModal from "@/components/dashboard/license-request/ConfirmSubmitModal";
+import RequestLicensePageSkeleton from "@/components/dashboard/license-request/RequestLicenseSkeleton";
+import { LicenseStepFooter } from "@/components/dashboard/license-request/LicenseStepFooter";
+import { LicenseErrorBanner } from "@/components/dashboard/license-request/LicenseErrorBanner";
 import { LICENSE_DOCUMENTS } from "@/constants/license-documents";
 import {
   deserializeDocumentEntries,
@@ -31,8 +29,7 @@ import {
   removeWithTTL,
   setWithTTL,
 } from "@/lib/storageWithTTL";
-
-import type { DocumentEntries } from "@/components/license-request/Step2Documents";
+import type { DocumentEntries } from "@/components/dashboard/license-request/Step2Documents";
 import type { PersistedStep2 } from "@/lib/documentEntries";
 
 const STORAGE_KEY = "license_request_step1";
@@ -45,13 +42,10 @@ const EMPTY_STEP1: Step1Data = {
   shift: "",
   bloodType: "",
 };
-
-const EMPTY_STEP3: Step3Data = {
-  selections: [],
-};
+const EMPTY_STEP3: Step3Data = { selections: [] };
 
 const Step2Documents = dynamic(
-  () => import("@/components/license-request/Step2Documents"),
+  () => import("@/components/dashboard/license-request/Step2Documents"),
   {
     ssr: false,
     loading: () => (
@@ -64,7 +58,7 @@ const Step2Documents = dynamic(
         ))}
       </div>
     ),
-  }
+  },
 );
 
 export default function RequestLicensePage() {
@@ -76,7 +70,6 @@ export default function RequestLicensePage() {
   const [step3, setStep3] = useState<Step3Data>(EMPTY_STEP3);
   const [documentEntries, setDocumentEntries] =
     useState<DocumentEntries>(makeEmptyEntries());
-
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -97,12 +90,13 @@ export default function RequestLicensePage() {
     const savedStep3 = getWithTTL<Step3Data>(STORAGE_KEY_STEP3, ONE_DAY_MS);
     if (savedStep3) setStep3(savedStep3);
 
-    const savedStep2 = getWithTTL<PersistedStep2>(STORAGE_KEY_STEP2, ONE_DAY_MS);
+    const savedStep2 = getWithTTL<PersistedStep2>(
+      STORAGE_KEY_STEP2,
+      ONE_DAY_MS,
+    );
     if (savedStep2) {
       void deserializeDocumentEntries(savedStep2).then((entries) => {
-        if (!cancelled) {
-          setDocumentEntries(entries);
-        }
+        if (!cancelled) setDocumentEntries(entries);
       });
     }
 
@@ -116,22 +110,17 @@ export default function RequestLicensePage() {
     setStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
   const handleBackFromStep2 = () => {
     setStep(1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
   const handleContinueFromStep2 = async () => {
     setWithTTL(STORAGE_KEY, step1);
-
     const serialized = await serializeDocumentEntries(documentEntries);
     setWithTTL(STORAGE_KEY_STEP2, serialized);
-
     setStep(3);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
   const handleBackFromStep3 = () => {
     setStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -140,51 +129,37 @@ export default function RequestLicensePage() {
   const handleFinalSubmit = async () => {
     setSubmitting(true);
     setError("");
-
     try {
       setWithTTL(STORAGE_KEY_STEP3, step3);
-
       const formData = new FormData();
-
       const appendIfFilled = (key: string, value: string) => {
         const normalized = value.trim();
-        if (normalized.length > 0) {
-          formData.append(key, normalized);
-        }
+        if (normalized.length > 0) formData.append(key, normalized);
       };
-
       appendIfFilled("institution", step1.institution);
       appendIfFilled("degree", step1.degree);
       appendIfFilled("shift", step1.shift);
       appendIfFilled("bloodType", step1.bloodType);
       formData.append("schedule", JSON.stringify(step3.selections));
-
       for (const doc of LICENSE_DOCUMENTS) {
         const entry = documentEntries[doc.photoType];
         const blob = entry?.result?.processedBlob ?? entry?.file;
         if (!blob) continue;
-
-        const fallbackName = blob.type === "image/jpeg"
-          ? `${doc.photoType}.jpg`
-          : `${doc.photoType}.pdf`;
-
-        const uploadFileName = blob.type === "image/jpeg"
-          ? (entry?.file?.name?.replace(/\.[^.]+$/, "") || doc.photoType) + ".jpg"
-          : entry?.file?.name ?? fallbackName;
-
-        formData.append(
-          doc.photoType,
-          blob,
-          uploadFileName
-        );
+        const fallbackName =
+          blob.type === "image/jpeg"
+            ? `${doc.photoType}.jpg`
+            : `${doc.photoType}.pdf`;
+        const uploadFileName =
+          blob.type === "image/jpeg"
+            ? (entry?.file?.name?.replace(/\.[^.]+$/, "") || doc.photoType) +
+              ".jpg"
+            : (entry?.file?.name ?? fallbackName);
+        formData.append(doc.photoType, blob, uploadFileName);
       }
-
       await api.postForm("/student/me/license-submit", formData);
-
       removeWithTTL(STORAGE_KEY);
       removeWithTTL(STORAGE_KEY_STEP2);
       removeWithTTL(STORAGE_KEY_STEP3);
-
       router.push("/dashboard?requested=true");
     } catch (err: unknown) {
       const e = err as { message?: string };
@@ -195,9 +170,7 @@ export default function RequestLicensePage() {
     }
   };
 
-  if (loading) {
-    return <RequestLicensePageSkeleton />;
-  }
+  if (loading) return <RequestLicensePageSkeleton />;
 
   return (
     <div className="min-h-screen bg-surface">
@@ -208,24 +181,15 @@ export default function RequestLicensePage() {
         >
           <ArrowLeft size={20} className="text-on-surface" />
         </button>
-
         <h1 className="font-headline font-bold text-on-surface text-lg flex-1">
           Solicitar Carteirinha
         </h1>
-
         <ThemeToggle className="text-on-surface-variant hover:bg-surface-container-low" />
       </header>
 
       <main className="pt-20 pb-28 px-5 max-w-lg mx-auto">
         <StepIndicator currentStep={step} />
-
-        {error && (
-          <div className="bg-error-container border border-error-border text-error text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
-            <AlertCircle size={16} />
-            {error}
-          </div>
-        )}
-
+        <LicenseErrorBanner error={error} />
         {step === 1 && (
           <Step1InfoForm
             data={step1}
@@ -233,7 +197,6 @@ export default function RequestLicensePage() {
             onContinue={handleContinueFromStep1}
           />
         )}
-
         {step === 2 && (
           <Step2Documents
             entries={documentEntries}
@@ -243,7 +206,6 @@ export default function RequestLicensePage() {
             continueDisabled={interactionBlocked}
           />
         )}
-
         {step === 3 && (
           <Step3Grade
             data={step3}
@@ -255,46 +217,14 @@ export default function RequestLicensePage() {
         )}
       </main>
 
-      {step === 1 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 px-6 pb-8 pt-4 flex justify-center bg-linear-to-t from-surface via-surface/90 to-transparent">
-          <Button
-            type="submit"
-            form="license-step1"
-            variant="primary"
-            size="lg"
-            icon={ArrowRight}
-            className="w-3/4 max-w-xs"
-            disabled={interactionBlocked}
-          >
-            Continuar
-          </Button>
-        </div>
-      )}
-
-      {step === 3 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 px-6 pb-8 pt-6 flex items-center gap-3 bg-linear-to-t from-surface via-surface/90 to-transparent">
-          <button
-            type="button"
-            onClick={handleBackFromStep3}
-            disabled={submitting}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container rounded-lg transition-all disabled:opacity-40"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar
-          </button>
-          <Button
-            variant="primary"
-            size="lg"
-            className="flex-1"
-            loading={submitting}
-            disabled={step3.selections.length === 0 || submitting || interactionBlocked}
-            icon={Send}
-            onClick={() => setShowConfirmModal(true)}
-          >
-            Finalizar
-          </Button>
-        </div>
-      )}
+      <LicenseStepFooter
+        step={step}
+        submitting={submitting}
+        interactionBlocked={interactionBlocked}
+        selectionsCount={step3.selections.length}
+        onBackFromStep3={handleBackFromStep3}
+        onOpenConfirmModal={() => setShowConfirmModal(true)}
+      />
 
       <ConfirmSubmitModal
         open={showConfirmModal}

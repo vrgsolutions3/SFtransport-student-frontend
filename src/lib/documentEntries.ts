@@ -1,5 +1,5 @@
 import { LICENSE_DOCUMENTS } from "@/constants/license-documents";
-import type { DocumentEntries } from "@/components/license-request/Step2Documents";
+import type { DocumentEntries } from "@/components/dashboard/license-request/Step2Documents";
 
 export interface PersistedDocumentEntry {
   name: string;
