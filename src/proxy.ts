@@ -8,34 +8,37 @@
 //   - Rotas públicas com sessão ativa → redireciona /dashboard
 //   - Rotas protegidas sem sessão     → redireciona /login
 //
-// O cookie "access_token" é um sinal de sessão ativa (não HTTP-only).
-// A segurança real está no refresh token HTTP-only + validação do backend.
+// O cookie "sid" é HTTP-only e representa a sessão opaca gerenciada pelo BFF.
 // ─────────────────────────────────────────────────────────────
 
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/register", "/verify-email", "/verify"];
+const AUTH_PUBLIC_PATHS = ["/login", "/register", "/verify-email"];
+const UTILITY_PUBLIC_PATHS = ["/verify"];
+const PUBLIC_PATHS = [...AUTH_PUBLIC_PATHS, ...UTILITY_PUBLIC_PATHS];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get("access_token")?.value;
+  const sid = request.cookies.get("_tk")?.value;
 
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   const isRoot = pathname === "/";
 
   // "/" → redireciona com base na sessão
   if (isRoot) {
-    const dest = token ? "/dashboard" : "/login";
+    const dest = sid ? "/dashboard" : "/login";
     return NextResponse.redirect(new URL(dest, request.url));
   }
 
-  // Autenticado tentando acessar rota pública → vai pro dashboard
-  if (isPublic && token) {
+  const isAuthPublic = AUTH_PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+
+  // Autenticado tentando acessar rota de autenticação pública → vai pro dashboard
+  if (isAuthPublic && sid) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   // Não autenticado tentando acessar rota protegida → vai pro login
-  if (!isPublic && !token) {
+  if (!isPublic && !sid) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }

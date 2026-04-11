@@ -6,16 +6,9 @@ import Link from "next/link";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { useAuth } from "@/hooks/useAuth";
+import { formatPhone } from "@/lib/formatters";
 import { Mail, Phone, UserRound, Lock, Send, CreditCard } from "lucide-react";
-
-function formatPhone(digits: string): string {
-  if (digits.length === 0) return "";
-  if (digits.length <= 2) return `(${digits}`;
-  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  if (digits.length <= 10)
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-}
+import { getFieldErrors, registerFormSchema } from "@/lib/validation/auth";
 
 function formatCpf(digits: string): string {
   if (digits.length === 0) return "";
@@ -24,19 +17,6 @@ function formatCpf(digits: string): string {
   if (digits.length <= 9)
     return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-}
-
-function isValidCpf(cpf: string): boolean {
-  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
-  const calc = (digits: string, weights: number[]) => {
-    const sum = digits.split("").reduce((acc, d, i) => acc + parseInt(d) * weights[i], 0);
-    const rem = sum % 11;
-    return rem < 2 ? 0 : 11 - rem;
-  };
-  const d1 = calc(cpf.slice(0, 9), [10, 9, 8, 7, 6, 5, 4, 3, 2]);
-  if (d1 !== parseInt(cpf[9])) return false;
-  const d2 = calc(cpf.slice(0, 10), [11, 10, 9, 8, 7, 6, 5, 4, 3, 2]);
-  return d2 === parseInt(cpf[10]);
 }
 
 export function RegisterForm() {
@@ -64,59 +44,18 @@ export function RegisterForm() {
   };
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    let isValid = true;
+    const result = registerFormSchema.safeParse(formData);
 
-    if (!formData.name) {
-      newErrors.name = "Nome é obrigatório";
-      isValid = false;
+    if (result.success) {
+      setErrors({});
+      return true;
     }
 
-    if (!formData.email) {
-      newErrors.email = "Email é obrigatório";
-      isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Email inválido";
-      isValid = false;
-    }
-
-    if (!formData.telephone) {
-      newErrors.telephone = "Telefone é obrigatório";
-      isValid = false;
-    } else if (formData.telephone.length < 10) {
-      newErrors.telephone = "Telefone inválido — mínimo 10 dígitos com DDD";
-      isValid = false;
-    }
-
-    if (!formData.cpf) {
-      newErrors.cpf = "CPF é obrigatório";
-      isValid = false;
-    } else if (!isValidCpf(formData.cpf)) {
-      newErrors.cpf = "CPF inválido";
-      isValid = false;
-    }
-
-    if (!formData.password) {
-      newErrors.password = "Senha é obrigatória";
-      isValid = false;
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Senha deve ter no mínimo 8 caracteres";
-      isValid = false;
-    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = "Senha deve ter maiúscula, minúscula e número";
-      isValid = false;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "As senhas não coincidem";
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
+    setErrors(getFieldErrors(result.error));
+    return false;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
     setLoading(true);

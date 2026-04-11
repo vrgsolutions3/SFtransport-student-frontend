@@ -3,9 +3,11 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CreditCard, Hourglass, QrCode } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useEnrollmentPeriod } from "@/hooks/useEnrollmentPeriod";
 import { useLicense } from "@/hooks/useLicense";
 import { License } from "@/types/license";
+import { CreditCard, Hourglass, ListOrdered, Lock, QrCode } from "lucide-react";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("pt-BR", {
@@ -34,11 +36,17 @@ function statusColor(status: License["status"]) {
 }
 
 function LicenseStatusCardInner() {
-  const { license, loading, hasLicense } = useLicense();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriod({
+    enabled: isAuthenticated && !authLoading,
+  });
+  const { license, loading, hasLicense, isWaitlisted, filaPosition } = useLicense({
+    enabled: isAuthenticated && !authLoading,
+  });
   const searchParams = useSearchParams();
   const justRequested = searchParams.get("requested") === "true";
 
-  if (loading) {
+  if (loading || periodLoading) {
     return (
       <div
         className="rounded-xl bg-surface-container-low animate-pulse"
@@ -48,6 +56,62 @@ function LicenseStatusCardInner() {
   }
 
   if (!hasLicense) {
+    if (!hasOpenPeriod) {
+      return (
+        <div
+          className="rounded-xl bg-surface-container-low"
+          style={{
+            padding: "20px 24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            border: "1px solid var(--shadow-border)",
+          }}
+        >
+          <div>
+            <p className="font-headline font-bold text-on-surface" style={{ fontSize: "15px", marginBottom: "4px" }}>
+              Inscrições encerradas
+            </p>
+            <p className="text-on-surface-variant" style={{ fontSize: "12px" }}>
+              Aguarde a abertura de um novo período.
+            </p>
+          </div>
+          <div className="bg-warning-container rounded-full" style={{ padding: "10px" }}>
+            <Lock className="text-warning" size={24} />
+          </div>
+        </div>
+      );
+    }
+
+    if (isWaitlisted) {
+      return (
+        <div
+          className="rounded-xl bg-tertiary-container"
+          style={{
+            padding: "20px 24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            border: "1px solid var(--shadow-tertiary)",
+          }}
+        >
+          <div>
+            <p className="font-headline font-bold text-on-tertiary" style={{ fontSize: "15px", marginBottom: "4px" }}>
+              Na fila de espera
+            </p>
+            <p className="text-on-tertiary" style={{ fontSize: "12px" }}>
+              {filaPosition !== null
+                ? `Posição atual: ${filaPosition}`
+                : "A fila ainda não existe."}
+            </p>
+          </div>
+          <div className="bg-black/10 rounded-full" style={{ padding: "10px" }}>
+            <ListOrdered className="text-on-tertiary" size={24} />
+          </div>
+        </div>
+      );
+    }
+
     if (justRequested) {
       return (
         <div

@@ -1,15 +1,3 @@
-// ─────────────────────────────────────────────────────────────
-// contexts/AuthContext.tsx
-// AuthProvider + useAuth hook.
-//
-// Responsabilidades:
-//   - Recuperar sessão no mount via POST /auth/refresh
-//   - Manter access token em memória (nunca em localStorage)
-//   - Espelhar token em cookie comum (sinal para o middleware)
-//   - Expor login / logout / register / verifyEmail / resendCode
-//   - Injetar callbacks no apiClient (refresh, forceLogout, getToken)
-// ─────────────────────────────────────────────────────────────
-
 "use client";
 
 import {
@@ -20,16 +8,18 @@ import {
   useRef,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
-import { configureApiClient, apiClient } from "@/lib/apiClient";
+import { usePathname, useRouter } from "next/navigation";
+import { configureApiClient, resetApiClientState } from "@/lib/apiClient";
 import type {
   AuthUser,
-  LoginResponse,
   RegisterResponse,
   MessageResponse,
 } from "@/types/auth";
-
-// ── Tipos do contexto ─────────────────────────────────────────
+import {
+  parseCsrfMeta,
+  registerPayloadSchema,
+  sessionAuthResponseSchema,
+} from "@/lib/validation/auth";
 
 interface AuthState {
   user: AuthUser | null;
@@ -59,141 +49,229 @@ interface AuthContextValue extends AuthState {
   ) => Promise<{ success: true } | { success: false; error: string }>;
 }
 
+interface CsrfMeta {
+  headerName: string;
+  token: string;
+}
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// ── Helpers de cookie comum (sinal para o middleware) ─────────
+const PUBLIC_PATHS = ["/login", "/register", "/verify-email", "/verify"];
 
-const ACCESS_COOKIE = "access_token";
-
-function setAccessCookie(token: string) {
-  document.cookie = `${ACCESS_COOKIE}=${token}; path=/; SameSite=Strict`;
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 }
 
-function clearAccessCookie() {
-  document.cookie = `${ACCESS_COOKIE}=; path=/; max-age=0; SameSite=Strict`;
-}
-
-// ── Provider ──────────────────────────────────────────────────
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({
+  children,
+  bootstrapOnMount = true,
+}: {
+  children: React.ReactNode;
+  bootstrapOnMount?: boolean;
+}) {
   const router = useRouter();
-
-  // Token vive apenas em memória
-  const tokenRef = useRef<string | null>(null);
+  const pathname = usePathname();
 
   const [state, setState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
-    isLoading: true,
+    isLoading: bootstrapOnMount,
   });
+  const csrfRef = useRef<CsrfMeta | null>(null);
+  const pathnameRef = useRef(pathname);
 
-  // ── Salva token em memória + cookie comum ─────────────────
-  const saveToken = useCallback((token: string) => {
-    tokenRef.current = token;
-    setAccessCookie(token);
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
+  const updateCsrfMeta = useCallback((payload: unknown) => {
+    const csrfMeta = parseCsrfMeta(payload);
+    if (csrfMeta) {
+      csrfRef.current = csrfMeta;
+    }
   }, []);
 
-  // ── Limpa toda a sessão ───────────────────────────────────
+  const ensureCsrf = useCallback(async (forceRefresh = false): Promise<CsrfMeta | null> => {
+    if (!forceRefresh && csrfRef.current) {
+      return csrfRef.current;
+    }
+
+    try {
+      const res = await fetch("/api/auth/session", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      updateCsrfMeta(payload);
+      return csrfRef.current;
+    } catch {
+      return null;
+    }
+  }, [updateCsrfMeta]);
+
   const clearSession = useCallback(() => {
-    tokenRef.current = null;
-    clearAccessCookie();
     setState({ user: null, isAuthenticated: false, isLoading: false });
   }, []);
 
-  // ── Callback de refresh (usado pela fila anti-401) ────────
-  const doRefresh = useCallback(async (): Promise<string> => {
-    const data = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-      {
-        method: "POST",
-        credentials: "include",
-      }
-    );
-
-    if (!data.ok) throw new Error("Refresh falhou");
-
-    const json: LoginResponse = await data.json();
-    saveToken(json.access_token);
-    setState({
-      user: json.user,
-      isAuthenticated: true,
-      isLoading: false,
-    });
-    return json.access_token;
-  }, [saveToken]);
-
-  // ── Força logout (chamado pela fila quando refresh falha) ─
-  const forceLogout = useCallback(() => {
+  const handleUnauthorized = useCallback(() => {
     clearSession();
-    router.push("/login");
+    if (!isPublicPath(pathnameRef.current)) {
+      router.push("/login");
+    }
   }, [clearSession, router]);
 
-  // ── Configura o apiClient uma única vez ───────────────────
   useEffect(() => {
-    configureApiClient({
-      getToken: () => tokenRef.current,
-      refreshToken: doRefresh,
-      forceLogout,
-    });
-  }, [doRefresh, forceLogout]);
+    resetApiClientState();
+    configureApiClient({ onUnauthorized: handleUnauthorized });
+  }, [handleUnauthorized]);
 
-  // ── Recuperação de sessão no mount ────────────────────────
   useEffect(() => {
+    if (!bootstrapOnMount) {
+      setState((prev) => ({ ...prev, isLoading: false }));
+      return;
+    }
+
     let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
 
     (async () => {
       try {
-        await doRefresh();
+        const res = await fetch("/api/auth/session", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        const payload = await res.json().catch(() => ({}));
+        updateCsrfMeta(payload);
+
+        if (!res.ok) {
+          throw new Error("No session");
+        }
+
+        const sessionResult = sessionAuthResponseSchema.safeParse(payload);
+        if (!sessionResult.success) {
+          throw new Error("Invalid session response");
+        }
+
+        if (!cancelled) {
+          setState({
+            user: sessionResult.data.user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        }
       } catch {
         if (!cancelled) {
-          setState({ user: null, isAuthenticated: false, isLoading: false });
+          clearSession();
+          if (!isPublicPath(pathnameRef.current)) {
+            router.replace("/login");
+          }
         }
+      } finally {
+        clearTimeout(timeoutId);
       }
     })();
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [bootstrapOnMount, clearSession, router, updateCsrfMeta]);
 
-  // ── login ─────────────────────────────────────────────────
+  const authFetch = useCallback(
+    async (
+      url: string,
+      options: RequestInit,
+    ): Promise<{ ok: boolean; data: unknown; status: number }> => {
+      const method = (options.method ?? "GET").toUpperCase();
+      const requiresCsrf = method !== "GET" && method !== "HEAD";
+
+      const execute = async (): Promise<{ res: Response; data: unknown }> => {
+        const headers = new Headers(options.headers ?? {});
+
+        if (requiresCsrf) {
+          const csrfMeta = await ensureCsrf();
+          if (csrfMeta) {
+            headers.set(csrfMeta.headerName, csrfMeta.token);
+          }
+        }
+
+        const res = await fetch(url, {
+          ...options,
+          headers,
+          credentials: options.credentials ?? "include",
+        });
+
+        const data = await res.json().catch(() => ({}));
+        updateCsrfMeta(data);
+        return { res, data };
+      };
+
+      let result = await execute();
+
+      if (requiresCsrf && result.res.status === 403) {
+        await ensureCsrf(true);
+        result = await execute();
+      }
+
+      return { ok: result.res.ok, data: result.data, status: result.res.status };
+    },
+    [ensureCsrf, updateCsrfMeta],
+  );
+
   const login = useCallback(
     async (
       email: string,
       password: string
     ): Promise<{ success: true } | { success: false; error: string }> => {
       try {
-        const data = await apiClient.post<LoginResponse>(
-          "/auth/student/login",
-          { email, password }
-        );
-        saveToken(data.access_token);
-        setState({ user: data.user, isAuthenticated: true, isLoading: false });
+        const { ok, data } = await authFetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (!ok) {
+          const payload = data as { message?: string };
+          return {
+            success: false,
+            error: typeof payload.message === "string" ? payload.message : "Credenciais inválidas",
+          };
+        }
+
+        const sessionResult = sessionAuthResponseSchema.safeParse(data);
+        if (!sessionResult.success) {
+          return { success: false, error: "Resposta de login invalida" };
+        }
+
+        setState({ user: sessionResult.data.user, isAuthenticated: true, isLoading: false });
         return { success: true };
-      } catch (err: unknown) {
-        const msg =
-          typeof err === "object" && err !== null && "message" in err
-            ? String((err as { message: unknown }).message)
-            : "Credenciais inválidas";
-        return { success: false, error: msg };
+      } catch {
+        return { success: false, error: "Falha ao realizar login" };
       }
     },
-    [saveToken]
+    [authFetch],
   );
 
-  // ── logout ────────────────────────────────────────────────
   const logout = useCallback(async () => {
     try {
-      await apiClient.post<MessageResponse>("/auth/logout", {});
+      await authFetch("/api/auth/logout", {
+        method: "POST",
+      });
     } catch {
-      // ignora erro — limpamos o estado de qualquer jeito
+      // Logout é idempotente por contrato.
     } finally {
       clearSession();
       router.push("/login");
     }
-  }, [clearSession, router]);
+  }, [authFetch, clearSession, router]);
 
-  // ── register ──────────────────────────────────────────────
   const register = useCallback(
     async (data: {
       name: string;
@@ -205,66 +283,110 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       { success: true; isInstitutional: boolean } | { success: false; error: string }
     > => {
       try {
-        const res = await apiClient.post<RegisterResponse>(
-          "/auth/student/register",
-          data
-        );
-        return { success: true, isInstitutional: res.isInstitutional };
-      } catch (err: unknown) {
-        const msg =
-          typeof err === "object" && err !== null && "message" in err
-            ? String((err as { message: unknown }).message)
-            : "Erro ao criar conta";
-        return { success: false, error: msg };
+        const payloadResult = registerPayloadSchema.safeParse(data);
+        if (!payloadResult.success) {
+          return { success: false, error: "Dados de cadastro invalidos" };
+        }
+
+        const { ok, data: payloadData } = await authFetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payloadResult.data),
+        });
+
+        const payload = payloadData as Partial<RegisterResponse> & {
+          message?: string;
+        };
+
+        if (!ok) {
+          return {
+            success: false,
+            error: typeof payload.message === "string" ? payload.message : "Erro ao criar conta",
+          };
+        }
+
+        return {
+          success: true,
+          isInstitutional: Boolean(payload.isInstitutional),
+        };
+      } catch {
+        return { success: false, error: "Erro ao criar conta" };
       }
     },
-    []
+    [authFetch],
   );
 
-  // ── verifyEmail ───────────────────────────────────────────
   const verifyEmail = useCallback(
     async (
       email: string,
       code: string
     ): Promise<{ success: true } | { success: false; error: string }> => {
       try {
-        const data = await apiClient.post<LoginResponse>(
-          "/auth/student/verify",
-          { email, code }
-        );
-        saveToken(data.access_token);
-        setState({ user: data.user, isAuthenticated: true, isLoading: false });
+        const { ok, data } = await authFetch("/api/auth/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, code }),
+        });
+
+        if (!ok) {
+          const payload = data as { message?: string };
+          return {
+            success: false,
+            error: typeof payload.message === "string" ? payload.message : "Código inválido",
+          };
+        }
+
+        const sessionResult = sessionAuthResponseSchema.safeParse(data);
+        if (!sessionResult.success) {
+          return { success: false, error: "Resposta de verificacao invalida" };
+        }
+
+        setState({ user: sessionResult.data.user, isAuthenticated: true, isLoading: false });
+
         return { success: true };
-      } catch (err: unknown) {
-        const msg =
-          typeof err === "object" && err !== null && "message" in err
-            ? String((err as { message: unknown }).message)
-            : "Código inválido";
-        return { success: false, error: msg };
+      } catch {
+        return { success: false, error: "Falha ao verificar código" };
       }
     },
-    [saveToken]
+    [authFetch],
   );
 
-  // ── resendCode ────────────────────────────────────────────
   const resendCode = useCallback(
-    async (
-      email: string
-    ): Promise<{ success: true } | { success: false; error: string }> => {
+    async (email: string): Promise<{ success: true } | { success: false; error: string }> => {
       try {
-        await apiClient.post<MessageResponse>("/auth/student/resend-code", {
-          email,
+        const { ok, data } = await authFetch("/api/auth/resend-code", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email }),
         });
+
+        const payload = data as MessageResponse;
+
+        if (!ok) {
+          return {
+            success: false,
+            error: typeof payload?.message === "string" ? payload.message : "Erro ao reenviar código",
+          };
+        }
+
+        if (payload?.message) {
+          return { success: true };
+        }
+
         return { success: true };
       } catch (err: unknown) {
         const msg =
           typeof err === "object" && err !== null && "message" in err
             ? String((err as { message: unknown }).message)
             : "Erro ao reenviar código";
+
         return { success: false, error: msg };
       }
     },
-    []
+    [authFetch],
   );
 
   const value: AuthContextValue = {
@@ -278,8 +400,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-
-// ── useAuth hook ──────────────────────────────────────────────
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
