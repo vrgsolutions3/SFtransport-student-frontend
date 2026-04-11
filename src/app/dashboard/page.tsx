@@ -2,24 +2,29 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { BusFront } from "lucide-react";
+import { Clock3 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useEnrollmentPeriod } from "@/hooks/useEnrollmentPeriod";
 import { useLicense } from "@/hooks/useLicense";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardGreeting from "@/components/dashboard/DashboardGreeting";
-import ActionCard from "@/components/dashboard/ActionCard";
-import LicenseActionCard from "@/components/dashboard/LicenseActionCard";
-import { DASHBOARD_ACTIONS, DOCUMENTS_ACTION } from "@/constants/dashboard-actions";
+import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
+import { DashboardActions } from "@/components/dashboard/DashboardActions";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
+  const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriod({
+    enabled: isAuthenticated && !authLoading,
+  });
   const {
     hasLicense,
     licenseRequest,
     loading: licenseLoading,
     isUnderReview,
     isRejected,
+    isWaitlisted,
+    filaPosition,
     rejectionReason,
   } = useLicense({
     enabled: isAuthenticated && !authLoading,
@@ -29,78 +34,56 @@ export default function DashboardPage() {
     if (!authLoading && !isAuthenticated) router.push("/login");
   }, [isAuthenticated, authLoading, router]);
 
-  if (authLoading || !user || licenseLoading) {
-    return (
-      <>
-        <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/30">
-          <div className="h-15 px-4 flex items-center">
-            <div className="w-9 h-9 rounded-full bg-surface-container-low animate-pulse" />
-            <div className="mx-auto h-5 w-40 rounded-md bg-surface-container-low animate-pulse" />
-            <div className="w-9 h-9 rounded-full bg-surface-container-low animate-pulse" />
-          </div>
-        </header>
-
-        <main className="flex flex-col flex-1 pt-24 pb-8 px-6 max-w-lg mx-auto w-full animate-pulse">
-          <section style={{ marginBottom: "40px" }}>
-            <div className="h-10 w-3/4 rounded-lg bg-surface-container-low mb-2" />
-            <div className="h-5 w-full rounded-md bg-surface-container-low" />
-          </section>
-
-          <nav className="flex flex-col gap-4 flex-1">
-            <div className="rounded-xl bg-surface-container-low h-22 border border-outline-variant/30" />
-            <div className="rounded-xl bg-surface-container-low h-26 border border-outline-variant/30" />
-            <div className="rounded-xl bg-surface-container-low h-26 border border-outline-variant/30" />
-            <div className="rounded-xl bg-surface-container-low h-26 border border-outline-variant/30" />
-          </nav>
-
-          <footer className="mt-12 flex flex-col items-center gap-1 opacity-30 pointer-events-none">
-            <div className="w-10 h-10 rounded-full bg-surface-container-low" />
-            <div className="h-3 w-40 rounded-md bg-surface-container-low" />
-          </footer>
-        </main>
-      </>
-    );
+  if (authLoading || !user || licenseLoading || periodLoading) {
+    return <DashboardSkeleton />;
   }
 
-  // identifier é o email do student
   const displayName = user.name;
   const shouldShowDocumentsCard = hasLicense || licenseRequest !== null;
 
   return (
     <>
-      <DashboardHeader onLogout={logout} onNavigateProfile={() => router.push("/dashboard/profile")} />
-
+      <DashboardHeader title="Menu Principal" />
       <main className="flex flex-col flex-1 pt-24 pb-8 px-6 max-w-lg mx-auto w-full">
         <DashboardGreeting name={displayName} />
-
-        <nav className="flex flex-col gap-4 flex-1">
-          <>
-            <LicenseActionCard
-              loading={licenseLoading}
-              hasLicense={hasLicense}
-              isUnderReview={isUnderReview}
-              isRejected={isRejected}
-              rejectionReason={rejectionReason}
-            />
-            {shouldShowDocumentsCard && (
-              <ActionCard action={DOCUMENTS_ACTION} />
-            )}
-            {DASHBOARD_ACTIONS.filter((action) => action.href !== DOCUMENTS_ACTION.href).map((action) => (
-              <ActionCard
-                key={action.href}
-                action={action}
-                disabled={licenseLoading || (action.requiresLicense === true && !hasLicense)}
-              />
-            ))}
-          </>
-        </nav>
-
-        <footer className="mt-12 flex flex-col items-center gap-1 opacity-30 pointer-events-none">
-          <BusFront className="text-primary w-10 h-10" strokeWidth={2.5} aria-hidden="true" />
-          <p className="font-headline font-extrabold uppercase tracking-widest text-[10px] text-on-surface">
-            Prefeitura de São Fidélis
-          </p>
-        </footer>
+        {isWaitlisted && (
+          <section
+            className="mb-4 rounded-2xl border border-tertiary/20 bg-tertiary-container p-4"
+            style={{ boxShadow: "0 4px 16px var(--shadow-tertiary)" }}
+          >
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-tertiary/15 p-2 shrink-0">
+                <Clock3 className="text-on-tertiary w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="font-headline font-bold text-on-tertiary text-sm">
+                  Sua solicitação está na fila de espera
+                </h2>
+                <p className="text-on-tertiary text-sm/relaxed">
+                  {filaPosition !== null
+                    ? `Você está na posição ${filaPosition} da fila de espera.`
+                    : "A fila ainda não existe."}
+                </p>
+                {/* VERSÃO GENÉRICA — descomentar para testar sem posição numérica:
+                <p className="text-on-tertiary text-sm/relaxed">
+                  Sua solicitação está na fila de espera. Você será notificado quando uma vaga for liberada.
+                </p>
+                */}
+              </div>
+            </div>
+          </section>
+        )}
+        <DashboardActions
+          licenseLoading={licenseLoading}
+          hasLicense={hasLicense}
+          isUnderReview={isUnderReview}
+          isRejected={isRejected}
+          isWaitlisted={isWaitlisted}
+          filaPosition={filaPosition}
+          hasOpenEnrollmentPeriod={hasOpenPeriod}
+          rejectionReason={rejectionReason}
+          shouldShowDocumentsCard={shouldShowDocumentsCard}
+        />
       </main>
     </>
   );

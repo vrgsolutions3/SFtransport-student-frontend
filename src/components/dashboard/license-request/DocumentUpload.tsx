@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   CheckCircle,
   AlertTriangle,
@@ -23,6 +23,25 @@ interface DocumentUploadProps {
   onFileSelect: (file: File) => void;
   onRemove: () => void;
   disabled?: boolean;
+}
+
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const IMAGE_TYPES = ["image/jpeg", "image/png"];
+
+function validateSelectedFile(file: File, acceptPdf: boolean): string | null {
+  const allowedTypes = acceptPdf ? [...IMAGE_TYPES, "application/pdf"] : IMAGE_TYPES;
+
+  if (!allowedTypes.includes(file.type)) {
+    return acceptPdf
+      ? "Apenas JPEG, PNG ou PDF são permitidos."
+      : "Apenas imagens JPEG e PNG são permitidas.";
+  }
+
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return "O arquivo deve ter no máximo 5MB.";
+  }
+
+  return null;
 }
 
 // ─── Status visual ────────────────────────────────────────────
@@ -124,6 +143,7 @@ export default function DocumentUpload({
   disabled = false,
 }: DocumentUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const status: ImageValidationStatus = entry?.result?.status ?? "idle";
   const isPdf = entry?.file?.type === "application/pdf";
@@ -233,6 +253,10 @@ export default function DocumentUpload({
         </div>
       )}
 
+      {fileError && (
+        <p className="px-4 pb-3 text-xs text-error">{fileError}</p>
+      )}
+
       <input
         ref={inputRef}
         type="file"
@@ -240,7 +264,21 @@ export default function DocumentUpload({
         capture={config.acceptPdf ? undefined : "environment"}
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) onFileSelect(file);
+
+          if (!file) {
+            setFileError(null);
+            return;
+          }
+
+          const validationError = validateSelectedFile(file, config.acceptPdf);
+          if (validationError) {
+            setFileError(validationError);
+            e.target.value = "";
+            return;
+          }
+
+          setFileError(null);
+          onFileSelect(file);
           e.target.value = "";
         }}
         className="hidden"

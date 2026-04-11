@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { API_BASE_URL, apiClient } from "@/lib/apiClient";
+import { apiClient } from "@/lib/apiClient";
 import type { License, LicenseRequest } from "@/types/license";
 
 interface UseLicenseResult {
@@ -11,6 +11,8 @@ interface UseLicenseResult {
   hasLicense: boolean;
   isUnderReview: boolean;
   isRejected: boolean;
+  isWaitlisted: boolean;
+  filaPosition: number | null;
   rejectionReason: string | null;
 }
 
@@ -30,6 +32,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
   const [loading, setLoading] = useState(true);
   const [isUnderReview, setIsUnderReview] = useState(false);
   const [isRejected, setIsRejected] = useState(false);
+  const [isWaitlisted, setIsWaitlisted] = useState(false);
+  const [filaPosition, setFilaPosition] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,7 +46,7 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
     }
 
     let fallbackIntervalId: number | null = null;
-    let eventSource: EventSource | null = null;
+    let streamAbortController: AbortController | null = null;
 
     const load = async () => {
       try {
@@ -53,6 +57,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
         setLicenseRequest(null);
         setIsUnderReview(false);
         setIsRejected(false);
+        setIsWaitlisted(false);
+        setFilaPosition(null);
         setRejectionReason(null);
         return;
       } catch {
@@ -69,6 +75,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
           setLicenseRequest(null);
           setIsUnderReview(false);
           setIsRejected(false);
+          setIsWaitlisted(false);
+          setFilaPosition(null);
           setRejectionReason(null);
           return;
         }
@@ -78,14 +86,26 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
         if (request.status === "pending") {
           setIsUnderReview(true);
           setIsRejected(false);
+          setIsWaitlisted(false);
+          setFilaPosition(null);
+          setRejectionReason(null);
+        } else if (request.status === "waitlisted") {
+          setIsWaitlisted(true);
+          setFilaPosition(request.filaPosition ?? null);
+          setIsUnderReview(false);
+          setIsRejected(false);
           setRejectionReason(null);
         } else if (request.status === "rejected") {
           setIsUnderReview(false);
           setIsRejected(true);
+          setIsWaitlisted(false);
+          setFilaPosition(null);
           setRejectionReason(request.rejectionReason);
         } else {
           setIsUnderReview(false);
           setIsRejected(false);
+          setIsWaitlisted(false);
+          setFilaPosition(null);
           setRejectionReason(null);
         }
       } catch {
@@ -93,6 +113,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
           setLicenseRequest(null);
           setIsUnderReview(false);
           setIsRejected(false);
+          setIsWaitlisted(false);
+          setFilaPosition(null);
           setRejectionReason(null);
         }
       }
@@ -116,42 +138,94 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
     };
 
     const connectSse = async () => {
-      if (typeof EventSource === "undefined") {
-        startFallbackPolling();
-        return;
-      }
-
       let ticketData: SseTicketResponse;
       try {
         ticketData = await apiClient.post<SseTicketResponse>("/license/events/token", {});
       } catch {
+        if (cancelled) {
+          return;
+        }
         startFallbackPolling();
         return;
       }
 
-      const sseUrl = `${API_BASE_URL}/license/events?ticket=${encodeURIComponent(ticketData.ticket)}`;
-      eventSource = new EventSource(sseUrl);
+      if (cancelled) {
+        return;
+      }
 
-      eventSource.onopen = () => {
-        clearFallbackPolling();
-      };
+      const abortController = new AbortController();
+      streamAbortController = abortController;
 
-      eventSource.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data) as { type?: string };
+      try {
+        const response = await fetch("/api/license/events", {
+          method: "POST",
+          headers: {
+            "x-sse-ticket": ticketData.ticket,
+          },
+          credentials: "include",
+          cache: "no-store",
+          signal: abortController.signal,
+        });
 
-          if (payload.type === "license.changed") {
-            void load();
-          }
-        } catch {
-          // ignora eventos malformados
+        if (cancelled) {
+          abortController.abort();
+          return;
         }
-      };
 
-      eventSource.onerror = () => {
+        if (!response.ok || !response.body) {
+          startFallbackPolling();
+          return;
+        }
+
+        clearFallbackPolling();
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (!cancelled) {
+          const { value, done } = await reader.read();
+
+          if (done) {
+            break;
+          }
+
+          if (!value) {
+            continue;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const rawEvents = buffer.split("\n\n");
+          buffer = rawEvents.pop() ?? "";
+
+          for (const rawEvent of rawEvents) {
+            const dataLines = rawEvent
+              .split("\n")
+              .filter((line) => line.startsWith("data:"))
+              .map((line) => line.slice(5).trimStart());
+
+            if (dataLines.length === 0) {
+              continue;
+            }
+
+            try {
+              const payload = JSON.parse(dataLines.join("\n")) as { type?: string };
+
+              if (payload.type === "license.changed") {
+                void load();
+              }
+            } catch {
+              // ignora eventos malformados
+            }
+          }
+        }
+      } catch {
         // Em caso de erro de conexão/autorização, mantemos polling como fallback.
-        startFallbackPolling();
-      };
+      } finally {
+        if (!cancelled) {
+          startFallbackPolling();
+        }
+      }
     };
 
     load().finally(() => {
@@ -178,7 +252,7 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
     return () => {
       cancelled = true;
       clearFallbackPolling();
-      eventSource?.close();
+      streamAbortController?.abort();
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
@@ -189,6 +263,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
   const effectiveLoading = enabled ? loading : false;
   const effectiveUnderReview = enabled ? isUnderReview : false;
   const effectiveRejected = enabled ? isRejected : false;
+  const effectiveWaitlisted = enabled ? isWaitlisted : false;
+  const effectiveFilaPosition = enabled ? filaPosition : null;
   const effectiveRejectionReason = enabled ? rejectionReason : null;
 
   return {
@@ -198,6 +274,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
     hasLicense: effectiveLicense !== null,
     isUnderReview: effectiveUnderReview,
     isRejected: effectiveRejected,
+    isWaitlisted: effectiveWaitlisted,
+    filaPosition: effectiveFilaPosition,
     rejectionReason: effectiveRejectionReason,
   };
 }

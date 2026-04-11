@@ -4,6 +4,11 @@ import { useState, useRef, useEffect } from "react";
 import { AutocompleteInput } from "@/components/ui/AutocompleteInput";
 import { useInstitutionAutocomplete } from "@/hooks/useInstitutionAutocomplete";
 import { BookOpenText, ChevronDown, Droplets, School } from "lucide-react";
+import {
+  BLOOD_TYPE_OPTIONS,
+  SHIFT_OPTIONS,
+  step1DataSchema,
+} from "@/lib/validation/license";
 
 export interface Step1Data {
   institution: string;
@@ -18,14 +23,7 @@ interface Step1InfoFormProps {
   onContinue: () => void;
 }
 
-const SHIFT_OPTIONS = [
-  { value: "Manhã", label: "Manhã" },
-  { value: "Tarde", label: "Tarde" },
-  { value: "Noite", label: "Noite" },
-  { value: "Integral", label: "Integral" },
-];
-
-const BLOOD_TYPE_OPTIONS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const SHIFT_BUTTON_OPTIONS = SHIFT_OPTIONS.map((value) => ({ value, label: value }));
 
 export default function Step1InfoForm({
   data,
@@ -79,22 +77,16 @@ export default function Step1InfoForm({
   };
 
   const validateForm = (): boolean => {
+    const result = step1DataSchema.safeParse(data);
     const newErrors: Partial<Record<keyof Step1Data, string>> = {};
 
-    if (!data.institution || data.institution.trim() === "") {
-      newErrors.institution = "Instituição de ensino é obrigatória";
-    }
-
-    if (!data.degree || data.degree.trim() === "") {
-      newErrors.degree = "Curso é obrigatório";
-    }
-
-    if (!data.shift || data.shift === "") {
-      newErrors.shift = "Turno é obrigatório";
-    }
-
-    if (!data.bloodType || data.bloodType === "") {
-      newErrors.bloodType = "Tipo sanguíneo é obrigatório";
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as keyof Step1Data | undefined;
+        if (field && !newErrors[field]) {
+          newErrors[field] = issue.message;
+        }
+      }
     }
 
     setErrors(newErrors);
@@ -152,7 +144,6 @@ export default function Step1InfoForm({
           value={data.degree}
           onValueChange={onCourseChange}
           disabled={!data.institution}
-          
           onBlur={() => markAsTouched("degree")}
           required
           error={touched.degree ? errors.degree : undefined}
@@ -168,7 +159,7 @@ export default function Step1InfoForm({
           className={`flex h-12 rounded-xl border overflow-hidden transition-all duration-150
             ${touched.shift && errors.shift ? "border-error" : "border-outline-variant"}`}
         >
-          {SHIFT_OPTIONS.map((opt) => (
+          {SHIFT_BUTTON_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"
@@ -239,7 +230,6 @@ export default function Step1InfoForm({
           </p>
         )}
       </div>
-
     </form>
   );
 }

@@ -1,5 +1,13 @@
 export const SID_COOKIE_NAME = "_tk";
 
+function getRequiredEnv(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`${name} não configurado no frontend.`);
+  }
+  return value;
+}
+
 function normalizeApiBaseUrl(rawValue: string): string {
   const base = rawValue.trim().replace(/\/+$/, "");
 
@@ -10,10 +18,9 @@ function normalizeApiBaseUrl(rawValue: string): string {
 }
 
 export function getBackendApiBaseUrl(): string {
-  const rawApiTarget =
-    process.env.API_PROXY_TARGET ??
-    process.env.NEXT_PUBLIC_API_URL ??
-    "http://localhost:3000";
+  const rawApiTarget = process.env.API_PROXY_TARGET?.trim()
+    ? getRequiredEnv("API_PROXY_TARGET")
+    : getRequiredEnv("NEXT_PUBLIC_API_URL");
 
   const base = rawApiTarget.trim().replace(/\/api\/v1\/?$/i, "").replace(/\/+$/, "");
   return normalizeApiBaseUrl(base);
@@ -29,8 +36,27 @@ export function getServiceSecret(): string {
   return secret.trim();
 }
 
+function parseTtlDays(raw: string, envName: string): number {
+  if (!/^\d+$/.test(raw)) {
+    throw new Error(`${envName} deve conter apenas números inteiros.`);
+  }
+
+  const days = Number(raw);
+  if (days <= 0) {
+    throw new Error(`${envName} deve ser maior que zero.`);
+  }
+
+  return days;
+}
+
 export function getSidMaxAgeSeconds(): number {
-  const raw = process.env.SESSION_TTL_DAYS?.trim();
-  const days = raw && /^\d+$/.test(raw) ? Number(raw) : 7;
+  const studentRaw = process.env.SESSION_TTL_STUDENT_DAYS?.trim();
+  const legacyRaw = process.env.SESSION_TTL_DAYS?.trim();
+  const days = studentRaw
+    ? parseTtlDays(studentRaw, "SESSION_TTL_STUDENT_DAYS")
+    : legacyRaw
+      ? parseTtlDays(legacyRaw, "SESSION_TTL_DAYS")
+      : 3;
+
   return days * 24 * 60 * 60;
 }
