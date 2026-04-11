@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { getAllInstitutions, getCoursesForInstitution } from '@/constants/institutions';
 
 interface UseInstitutionAutocompleteReturn {
@@ -14,40 +14,26 @@ export function useInstitutionAutocomplete(
   initialInstitution: string = '',
   initialCourse: string = ''
 ): UseInstitutionAutocompleteReturn {
-  // Inicializamos com os valores passados, ou string vazia se forem nulos/undefined
   const [institution, setInstitution] = useState(initialInstitution);
   const [course, setCourse] = useState(initialCourse);
-  const [courseOptions, setCourseOptions] = useState<string[]>([]);
+  const [institutionDirty, setInstitutionDirty] = useState(false);
+  const [courseDirty, setCourseDirty] = useState(false);
+
+  const effectiveInstitution = institutionDirty ? institution : initialInstitution;
+  const effectiveCourse = courseDirty ? course : initialCourse;
 
   const institutionOptions = getAllInstitutions();
+  const courseOptions = getCoursesForInstitution(effectiveInstitution);
 
-  // 1. Sincroniza o estado interno se as props iniciais mudarem (ex: data carregou depois)
-  useEffect(() => {
-    if (initialInstitution) {
-      setInstitution(initialInstitution);
-      const courses = getCoursesForInstitution(initialInstitution);
-      setCourseOptions(courses);
-    }
-  }, [initialInstitution]);
-
-  useEffect(() => {
-    if (initialCourse) {
-      setCourse(initialCourse);
-    }
-  }, [initialCourse]);
-
-  // 2. Handler para mudança de instituição
   const handleInstitutionChange = useCallback((newInstitution: string) => {
+    setInstitutionDirty(true);
+    setCourseDirty(true);
     setInstitution(newInstitution);
-    setCourse(''); // Limpa o curso ao trocar a faculdade
-    
-    // Busca os cursos disponíveis para a nova seleção
-    const courses = getCoursesForInstitution(newInstitution);
-    setCourseOptions(courses);
+    setCourse('');
   }, []);
 
-  // 3. Handler para mudança de curso
   const handleCourseChange = useCallback((newCourse: string) => {
+    setCourseDirty(true);
     setCourse(newCourse);
   }, []);
 
@@ -56,7 +42,7 @@ export function useInstitutionAutocomplete(
     courseOptions,
     handleInstitutionChange,
     handleCourseChange,
-    institution,
-    course,
+    institution: effectiveInstitution,
+    course: effectiveCourse,
   };
 }

@@ -7,6 +7,7 @@ import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowRight, Lock, AtSign, MessageCircleQuestionMark, Map, } from "lucide-react";
+import { getFieldErrors, loginCredentialsSchema } from "@/lib/validation/auth";
 
 
 export function LoginForm() {
@@ -17,30 +18,23 @@ export function LoginForm() {
   const [errors, setErrors] = useState({ email: "", password: "", general: "" });
 
   const validateForm = () => {
-    const newErrors = { email: "", password: "", general: "" };
-    let isValid = true;
+    const result = loginCredentialsSchema.safeParse(formData);
 
-    if (!formData.email) {
-      newErrors.email = "Email é obrigatório";
-      isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Email inválido";
-      isValid = false;
+    if (result.success) {
+      setErrors({ email: "", password: "", general: "" });
+      return true;
     }
 
-    if (!formData.password) {
-      newErrors.password = "Senha é obrigatória";
-      isValid = false;
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Senha deve ter no mínimo 6 caracteres";
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
+    const fieldErrors = getFieldErrors(result.error);
+    setErrors({
+      email: fieldErrors.email ?? "",
+      password: fieldErrors.password ?? "",
+      general: "",
+    });
+    return false;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
     setLoading(true);

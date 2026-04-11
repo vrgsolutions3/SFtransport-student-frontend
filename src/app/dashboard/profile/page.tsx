@@ -1,201 +1,156 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { api } from "@/lib/api";
-import { ArrowLeft, CheckCircle, LoaderCircle, Save, School, User } from "lucide-react";
-
-const SHIFT_OPTIONS = [
-  { value: "Manhã", label: "Manhã" },
-  { value: "Tarde", label: "Tarde" },
-  { value: "Noite", label: "Noite" },
-  { value: "Integral", label: "Integral" },
-];
-
-const BLOOD_TYPE_OPTIONS = [
-  "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-",
-];
-
-interface StudentProfile {
-  name: string;
-  email: string;
-  telephone: string;
-  degree: string;
-  shift: string;
-  bloodType: string;
-}
+import { useAuth } from "@/hooks/useAuth";
+import { LogOut } from "lucide-react";
+import { apiClient } from "@/lib/apiClient";
+import { formatPhone } from "@/lib/formatters";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { ProfileCard } from "@/components/dashboard/profile/ProfileCard";
+import { ProfileAcademicInfo } from "@/components/dashboard/profile/ProfileAcademicInfo";
+import { ProfileSchedule } from "@/components/dashboard/profile/ProfileSchedule";
+import { ProfilePhotoSheet } from "@/components/dashboard/profile/ProfilePhotoSheet";
+import ProfileSkeleton from "@/components/dashboard/profile/ProfileSkeleton";
+import type { StudentProfile } from "@/lib/profileUtils";
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { logout } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
-  const [formData, setFormData] = useState<StudentProfile>({
-    name: "",
-    email: "",
-    telephone: "",
-    degree: "",
-    shift: "",
-    bloodType: "",
-  });
+  const [profile, setProfile] = useState<StudentProfile | null>(null);
+  const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    api.get<StudentProfile>("/student/me")
-      .then((data) => setFormData({
-        name: data.name ?? "",
-        email: data.email ?? "",
-        telephone: data.telephone ?? "",
-        degree: data.degree ?? "",
-        shift: data.shift ?? "",
-        bloodType: data.bloodType ?? "",
-      }))
+    apiClient
+      .get<StudentProfile>("/student/me")
+      .then((data: StudentProfile) =>
+        setProfile({
+          name: data.name ?? "",
+          email: data.email ?? "",
+          telephone: data.telephone ?? "",
+          degree: data.degree ?? "",
+          shift: data.shift ?? "",
+          bloodType: data.bloodType ?? "",
+          institution: data.institution ?? "",
+          photo: data.photo ?? null,
+          schedule: data.schedule ?? [],
+        }),
+      )
       .catch(() => router.push("/login"))
       .finally(() => setLoading(false));
   }, [router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-    setSuccess(false);
-    try {
-      await api.patch("/student/me", {
-        degree: formData.degree,
-        shift: formData.shift,
-        bloodType: formData.bloodType,
-      });
-      setSuccess(true);
-    } catch (err: unknown) {
-      const e = err as { message?: string };
-      setError(e?.message ?? "Erro ao salvar");
-    } finally {
-      setSaving(false);
+  const validateProfilePhoto = (file: File): string | null => {
+    if (!ALLOWED_PROFILE_PHOTO_TYPES.includes(file.type)) {
+      return "Apenas imagens JPEG e PNG são permitidas.";
     }
+
+    if (file.size > MAX_PROFILE_PHOTO_SIZE_BYTES) {
+      return "O arquivo deve ter no máximo 5MB.";
+    }
+
+    return null;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-surface">
-        <LoaderCircle className="text-primary animate-spin" size={44} />
-      </div>
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validationError = validateProfilePhoto(file);
+    if (validationError) {
+      setPhotoError(validationError);
+      e.target.value = "";
+      return;
+    }
+
+    setPhotoError(null);
+    setPhotoSheetOpen(false);
+    const formData = new FormData();
+    formData.append("photo", file);
+    const updated = await apiClient.patchForm<StudentProfile>(
+      "/student/me/photo",
+      formData,
     );
-  }
+    setProfile((prev) => (prev ? { ...prev, photo: updated.photo } : prev));
+    e.target.value = "";
+  };
+
+  const handleRemovePhoto = async () => {
+    setPhotoSheetOpen(false);
+    await apiClient.delete("/student/me/photo");
+    setProfile((prev) => (prev ? { ...prev, photo: null } : prev));
+  };
+
+  if (loading) return <ProfileSkeleton />;
+  if (!profile) return null;
+
+  const academicRows = [
+    { label: "Instituição", value: profile.institution || "Não informado" },
+    { label: "Curso", value: profile.degree || "Não informado" },
+    { label: "Turno", value: profile.shift || "Não informado" },
+    { label: "Tipo Sanguíneo", value: profile.bloodType || "Não informado" },
+    {
+      label: "Telefone",
+      value: profile.telephone
+        ? formatPhone(profile.telephone.replace(/\D/g, ""))
+        : "Não informado",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-surface">
-      {/* Header */}
-      <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md shadow-sm flex items-center gap-3 px-4 h-16">
-        <button
-          onClick={() => router.back()}
-          className="p-2 rounded-full hover:bg-surface-container-low transition-colors active:scale-95"
-        >
-          <ArrowLeft className="text-on-surface" size={20} />
-        </button>
-        <h1 className="font-headline font-bold text-on-surface text-lg flex-1">Meu Perfil</h1>
-        <ThemeToggle className="text-on-surface-variant hover:bg-surface-container-low" />
-      </header>
+      <DashboardHeader title="Meu Perfil" />
 
       <main className="pt-20 pb-10 px-5 max-w-lg mx-auto">
-        {/* Info do usuário */}
-        <div className="bg-primary rounded-2xl p-5 mb-6 flex items-center gap-4">
-          <div className="w-14 h-14 bg-surface-container-lowest/20 rounded-full flex items-center justify-center shrink-0">
-            <User className="text-white" size={28} />
-          </div>
-          <div>
-            <p className="text-white font-bold text-base leading-tight">{formData.name}</p>
-            <p className="text-white/70 text-sm">{formData.email}</p>
-          </div>
-        </div>
+        <ProfileCard
+          photo={profile.photo}
+          name={profile.name}
+          email={profile.email}
+          onOpenPhotoSheet={() => setPhotoSheetOpen(true)}
+        />
 
-        {/* Feedback */}
-        {success && (
-          <div className="bg-success-container border border-success-border text-on-success text-sm rounded-xl px-4 py-3 mb-5 flex items-center gap-2">
-            <CheckCircle size={16} />
-            Perfil atualizado com sucesso!
-          </div>
-        )}
-        {error && (
-          <div className="bg-error-container border border-error-border text-error text-sm rounded-xl px-4 py-3 mb-5">
-            {error}
-          </div>
-        )}
+        <ProfileAcademicInfo academicRows={academicRows} />
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
-            Dados Acadêmicos
-          </p>
+        <ProfileSchedule schedule={profile.schedule} />
 
-          <Input
-            label="Curso"
-            type="text"
-            icon={School}
-            placeholder="Ex: Engenharia de Software"
-            value={formData.degree}
-            onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
-          />
-
-          {/* Turno */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1">
-              Turno
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {SHIFT_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, shift: opt.value })}
-                  className={`h-12 rounded-xl text-sm font-semibold transition-all active:scale-95 ${
-                    formData.shift === opt.value
-                      ? "bg-primary text-white shadow-md shadow-primary/20"
-                      : "bg-surface-container-low text-on-surface-variant"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Tipo sanguíneo */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1">
-              Tipo Sanguíneo
-            </label>
-            <div className="grid grid-cols-4 gap-2">
-              {BLOOD_TYPE_OPTIONS.map((bt) => (
-                <button
-                  key={bt}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, bloodType: bt })}
-                  className={`h-12 rounded-xl text-sm font-bold transition-all active:scale-95 ${
-                    formData.bloodType === bt
-                      ? "bg-primary text-white shadow-md shadow-primary/20"
-                      : "bg-surface-container-low text-on-surface-variant"
-                  }`}
-                >
-                  {bt}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            fullWidth
-            loading={saving}
-            icon={Save}
-          >
-            Salvar Alterações
-          </Button>
-        </form>
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-3 px-5 py-4 bg-surface-container-low rounded-2xl text-error text-sm font-medium hover:bg-error-container/20 transition-all cursor-pointer"
+        >
+          <LogOut size={18} className="shrink-0" />
+          Sair da Conta
+        </button>
       </main>
+
+      <ProfilePhotoSheet
+        open={photoSheetOpen}
+        hasPhoto={profile.photo !== null}
+        onClose={() => setPhotoSheetOpen(false)}
+        onCamera={() => cameraRef.current?.click()}
+        onGallery={() => galleryRef.current?.click()}
+        onRemove={handleRemovePhoto}
+      />
+
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/jpeg,image/png"
+        capture="environment"
+        className="hidden"
+        onChange={handlePhotoChange}
+      />
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/jpeg,image/png"
+        className="hidden"
+        onChange={handlePhotoChange}
+      />
     </div>
   );
 }

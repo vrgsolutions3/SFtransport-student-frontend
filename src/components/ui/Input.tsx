@@ -7,7 +7,7 @@ import { Eye, EyeOff, AlertCircle, LucideIcon } from "lucide-react";
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
-  icon?: LucideIcon; // Agora aceita um componente Lucide
+  icon?: LucideIcon;
   rightElement?: React.ReactNode;
 }
 
@@ -19,7 +19,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="space-y-1.5">
         {label && (
-          <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1">
+          <label className="text-sm font-medium text-on-surface-variant ml-1">
             {label}
           </label>
         )}
@@ -59,7 +59,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute inset-y-0 right-4 flex items-center text-on-surface-variant hover:text-on-surface transition-colors"
+              className="cursor-pointer absolute inset-y-0 right-4 flex items-center text-on-surface-variant hover:text-on-surface transition-colors"
               tabIndex={-1}
               aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
             >
