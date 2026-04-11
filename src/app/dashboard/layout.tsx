@@ -9,7 +9,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-surface pb-24">
+    <div className="min-h-screen flex flex-col bg-surface pb-24 overflow-x-hidden">
       <SwipeNavigator>{children}</SwipeNavigator>
       <BottomNav />
     </div>

@@ -4,7 +4,7 @@ interface CardSkeletonProps {
 
 export default function CardSkeleton({ hasLicense = true }: CardSkeletonProps) {
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="flex-1 bg-surface overflow-x-hidden">
       <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/30">
         <div className="h-16 px-4 flex items-center">
           <div className="mx-auto h-5 w-40 rounded-md bg-surface-container-low animate-pulse" />

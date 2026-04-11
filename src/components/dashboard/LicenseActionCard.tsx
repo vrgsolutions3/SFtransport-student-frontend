@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
-import { CreditCard, BadgeCheck, Clock3, XCircle } from "lucide-react";
+import { CreditCard, BadgeCheck, Clock3, ListOrdered, Lock, XCircle } from "lucide-react";
 
 function Skeleton() {
   return (
@@ -15,6 +15,9 @@ interface LicenseActionCardProps {
   hasLicense: boolean;
   isUnderReview: boolean;
   isRejected: boolean;
+  isWaitlisted: boolean;
+  filaPosition: number | null;
+  hasOpenEnrollmentPeriod: boolean;
   rejectionReason: string | null;
 }
 
@@ -23,10 +26,37 @@ function LicenseActionCardInner({
   hasLicense,
   isUnderReview,
   isRejected,
+  isWaitlisted,
+  filaPosition,
+  hasOpenEnrollmentPeriod,
   rejectionReason,
 }: LicenseActionCardProps) {
 
   if (loading) return <Skeleton />;
+
+  if (isWaitlisted) {
+    return (
+      <div
+        className="flex cursor-not-allowed items-center justify-between rounded-xl bg-tertiary-container p-6"
+        style={{ boxShadow: "0 4px 20px var(--shadow-tertiary)" }}
+        aria-disabled="true"
+      >
+        <div>
+          <h3 className="font-headline text-lg font-bold text-on-tertiary mb-1">
+            Na fila de espera
+          </h3>
+          <p className="text-sm text-on-tertiary/90">
+            {filaPosition !== null
+              ? `Posição atual: ${filaPosition}`
+              : "A fila ainda não existe."}
+          </p>
+        </div>
+        <div className="bg-black/10 rounded-full p-3 shrink-0 ml-4">
+          <ListOrdered className="text-on-tertiary w-7 h-7" />
+        </div>
+      </div>
+    );
+  }
 
   if (isUnderReview) {
     return (
@@ -81,6 +111,28 @@ function LicenseActionCardInner({
   }
 
   if (!hasLicense) {
+    if (!hasOpenEnrollmentPeriod) {
+      return (
+        <div
+          className="flex cursor-not-allowed items-center justify-between p-6 rounded-xl bg-surface-container-low border border-outline-variant/30"
+          style={{ boxShadow: "0 4px 20px var(--shadow-border)" }}
+          aria-disabled="true"
+        >
+          <div>
+            <h3 className="font-headline font-bold text-on-surface text-lg mb-1">
+              Inscrições encerradas
+            </h3>
+            <p className="text-on-surface-variant text-sm">
+              Aguarde a abertura de um novo período.
+            </p>
+          </div>
+          <div className="bg-warning-container rounded-full p-3 shrink-0 ml-4">
+            <Lock className="text-warning w-7 h-7" />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <Link
         href="/dashboard/request-license"

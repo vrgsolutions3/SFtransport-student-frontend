@@ -10,6 +10,9 @@ interface DashboardActionsProps {
   hasLicense: boolean;
   isUnderReview: boolean;
   isRejected: boolean;
+  isWaitlisted: boolean;
+  filaPosition: number | null;
+  hasOpenEnrollmentPeriod: boolean;
   rejectionReason: string | null;
   shouldShowDocumentsCard: boolean;
 }
@@ -19,6 +22,9 @@ export function DashboardActions({
   hasLicense,
   isUnderReview,
   isRejected,
+  isWaitlisted,
+  filaPosition,
+  hasOpenEnrollmentPeriod,
   rejectionReason,
   shouldShowDocumentsCard,
 }: DashboardActionsProps) {
@@ -29,6 +35,9 @@ export function DashboardActions({
         hasLicense={hasLicense}
         isUnderReview={isUnderReview}
         isRejected={isRejected}
+        isWaitlisted={isWaitlisted}
+        filaPosition={filaPosition}
+        hasOpenEnrollmentPeriod={hasOpenEnrollmentPeriod}
         rejectionReason={rejectionReason}
       />
       {shouldShowDocumentsCard && <ActionCard action={DOCUMENTS_ACTION} />}

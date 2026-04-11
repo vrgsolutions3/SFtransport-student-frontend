@@ -47,7 +47,7 @@ export default function CardPage() {
 
   if (!hasLicense || !license) {
     return (
-      <div className="min-h-screen bg-surface">
+      <div className="flex-1 bg-surface">
         <DashboardHeader title="Minha Carteirinha" />
         <CardNoLicense />
       </div>
@@ -55,7 +55,7 @@ export default function CardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="flex-1 bg-surface">
       <DashboardHeader title="Minha Carteirinha" />
 
       <main className="pt-20 pb-10 px-4 max-w-lg mx-auto">

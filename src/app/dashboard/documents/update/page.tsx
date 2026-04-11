@@ -7,6 +7,7 @@ import { AlertCircle, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import StepIndicator from "@/components/dashboard/license-request/StepIndicator";
 import { type Step3Data } from "@/components/dashboard/license-request/Step3grade";
+import { useAuth } from "@/hooks/useAuth";
 import { useNSFW } from "@/hooks/useNSFW";
 import { useImageProcessor } from "@/hooks/useImageProcessor";
 import { useLicense } from "@/hooks/useLicense";
@@ -35,13 +36,16 @@ const Step3GradeNoSSR = dynamic(
 
 export default function UpdateDocumentsRequestPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const nsfw = useNSFW();
   const {
     hasLicense,
     licenseRequest,
     isUnderReview,
     loading: loadingLicense,
-  } = useLicense();
+  } = useLicense({
+    enabled: isAuthenticated && !authLoading,
+  });
   const [checkingInitialDocuments, setCheckingInitialDocuments] =
     useState(true);
   const [hasInitialDocuments, setHasInitialDocuments] = useState(false);
@@ -85,7 +89,20 @@ export default function UpdateDocumentsRequestPage() {
     entries.every((entry) => entry !== null && entry.result?.status === "ok");
 
   useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  useEffect(() => {
     let cancelled = false;
+
+    if (authLoading || !isAuthenticated) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
     apiClient
       .get<StudentImageListItem[]>("/image/student/me")
       .then((data) => {
@@ -106,7 +123,7 @@ export default function UpdateDocumentsRequestPage() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [authLoading, isAuthenticated, router]);
 
   const toggleSelection = (type: PhotoType) =>
     setSelected((prev) => ({ ...prev, [type]: !prev[type] }));
@@ -166,7 +183,7 @@ export default function UpdateDocumentsRequestPage() {
     }
   };
 
-  if (loadingLicense || checkingInitialDocuments || !hasInitialDocuments)
+  if (authLoading || !isAuthenticated || loadingLicense || checkingInitialDocuments || !hasInitialDocuments)
     return <UpdateDocumentsSkeleton />;
   if (!loadingLicense && hasPendingRequest)
     return (

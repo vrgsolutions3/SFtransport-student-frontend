@@ -72,7 +72,7 @@ export function SwipeNavigator({ children }: { children: React.ReactNode }) {
       initial={{ opacity: 0, x: 30 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ type: "spring", stiffness: 400, damping: 35 }}
-      className="flex flex-col flex-1"
+      className="flex flex-col flex-1 min-w-0 overflow-x-hidden"
     >
       {children}
     </motion.div>

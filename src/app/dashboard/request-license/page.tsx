@@ -2,9 +2,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import { api } from "@/lib/api";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useAuth } from "@/hooks/useAuth";
+import { useEnrollmentPeriod } from "@/hooks/useEnrollmentPeriod";
 import { useLicense } from "@/hooks/useLicense";
 import StepIndicator from "@/components/dashboard/license-request/StepIndicator";
 import Step1InfoForm, {
@@ -63,7 +65,13 @@ const Step2Documents = dynamic(
 
 export default function RequestLicensePage() {
   const router = useRouter();
-  const { isUnderReview, loading, licenseRequest } = useLicense();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isUnderReview, isWaitlisted, loading, licenseRequest } = useLicense({
+    enabled: isAuthenticated && !authLoading,
+  });
+  const { loading: periodLoading, hasOpenPeriod, semVagas } = useEnrollmentPeriod({
+    enabled: isAuthenticated && !authLoading,
+  });
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [step1, setStep1] = useState<Step1Data>(EMPTY_STEP1);
@@ -74,13 +82,23 @@ export default function RequestLicensePage() {
   const [error, setError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const interactionBlocked = loading || isUnderReview;
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  const interactionBlocked = loading || periodLoading || isUnderReview || isWaitlisted;
 
   useEffect(() => {
     let cancelled = false;
 
-    if (!loading && isUnderReview && licenseRequest?.type === "initial") {
-      router.replace("/dashboard?pending=true");
+    if (
+      !loading &&
+      licenseRequest?.type === "initial" &&
+      (isUnderReview || isWaitlisted)
+    ) {
+      router.replace("/dashboard");
       return;
     }
 
@@ -103,7 +121,7 @@ export default function RequestLicensePage() {
     return () => {
       cancelled = true;
     };
-  }, [isUnderReview, loading, licenseRequest?.type, router]);
+  }, [isUnderReview, isWaitlisted, loading, licenseRequest?.type, router]);
 
   const handleContinueFromStep1 = () => {
     setWithTTL(STORAGE_KEY, step1);
@@ -170,7 +188,49 @@ export default function RequestLicensePage() {
     }
   };
 
-  if (loading) return <RequestLicensePageSkeleton />;
+  if (authLoading || !isAuthenticated || loading || periodLoading) {
+    return <RequestLicensePageSkeleton />;
+  }
+
+  if (!hasOpenPeriod) {
+    return (
+      <div className="min-h-screen bg-surface">
+        <header className="fixed top-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-md shadow-sm flex items-center gap-3 px-4 h-16">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-full hover:bg-surface-container-low transition-colors active:scale-95"
+          >
+            <ArrowLeft size={20} className="text-on-surface" />
+          </button>
+          <h1 className="font-headline font-bold text-on-surface text-lg flex-1">
+            Solicitar Carteirinha
+          </h1>
+          <ThemeToggle className="text-on-surface-variant hover:bg-surface-container-low" />
+        </header>
+
+        <main className="pt-24 pb-10 px-5 max-w-lg mx-auto">
+          <section className="rounded-2xl border border-outline-variant/30 bg-surface-container-low p-6 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-warning-container">
+              <Lock className="text-warning w-7 h-7" />
+            </div>
+            <h2 className="font-headline text-xl font-bold text-on-surface mb-2">
+              Inscrições encerradas
+            </h2>
+            <p className="text-sm text-on-surface-variant mb-6">
+              Aguarde a abertura de um novo período para enviar sua solicitação.
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className="w-full h-12 rounded-xl bg-primary text-white font-semibold text-sm transition-all active:scale-95"
+            >
+              Voltar ao dashboard
+            </button>
+          </section>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-surface">
@@ -235,6 +295,7 @@ export default function RequestLicensePage() {
         degree={step1.degree}
         shift={step1.shift}
         totalPeriods={step3.selections.length}
+        semVagas={semVagas}
       />
     </div>
   );

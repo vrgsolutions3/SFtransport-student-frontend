@@ -8,6 +8,7 @@ interface ConfirmSubmitModalProps {
   onClose: () => void;
   onConfirm: () => void;
   submitting: boolean;
+  semVagas: boolean;
   institution: string;
   degree: string;
   shift: string;
@@ -19,6 +20,7 @@ export default function ConfirmSubmitModal({
   onClose,
   onConfirm,
   submitting,
+  semVagas,
   institution,
   degree,
   shift,
@@ -72,6 +74,13 @@ export default function ConfirmSubmitModal({
             Certifique-se que os horários coincidem com os documentos enviados na etapa anterior.
           </p>
         </div>
+
+        {semVagas && (
+          <div className="rounded-lg bg-tertiary-container p-4 text-on-tertiary text-sm leading-relaxed">
+            <strong>Atenção:</strong> Não há vagas disponíveis no momento.
+            Sua solicitação entrará na fila de espera e você será notificado por e-mail quando uma vaga for liberada.
+          </div>
+        )}
 
         {/* Botões */}
         <div className="flex flex-col gap-2">

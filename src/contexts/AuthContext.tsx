@@ -181,7 +181,7 @@ export function AuthProvider({
       cancelled = true;
       controller.abort();
     };
-  }, [bootstrapOnMount, clearSession, pathname, router, updateCsrfMeta]);
+  }, [bootstrapOnMount, clearSession, router, updateCsrfMeta]);
 
   const authFetch = useCallback(
     async (

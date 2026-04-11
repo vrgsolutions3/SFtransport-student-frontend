@@ -11,6 +11,8 @@ interface UseLicenseResult {
   hasLicense: boolean;
   isUnderReview: boolean;
   isRejected: boolean;
+  isWaitlisted: boolean;
+  filaPosition: number | null;
   rejectionReason: string | null;
 }
 
@@ -30,6 +32,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
   const [loading, setLoading] = useState(true);
   const [isUnderReview, setIsUnderReview] = useState(false);
   const [isRejected, setIsRejected] = useState(false);
+  const [isWaitlisted, setIsWaitlisted] = useState(false);
+  const [filaPosition, setFilaPosition] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,6 +57,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
         setLicenseRequest(null);
         setIsUnderReview(false);
         setIsRejected(false);
+        setIsWaitlisted(false);
+        setFilaPosition(null);
         setRejectionReason(null);
         return;
       } catch {
@@ -69,6 +75,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
           setLicenseRequest(null);
           setIsUnderReview(false);
           setIsRejected(false);
+          setIsWaitlisted(false);
+          setFilaPosition(null);
           setRejectionReason(null);
           return;
         }
@@ -78,14 +86,26 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
         if (request.status === "pending") {
           setIsUnderReview(true);
           setIsRejected(false);
+          setIsWaitlisted(false);
+          setFilaPosition(null);
+          setRejectionReason(null);
+        } else if (request.status === "waitlisted") {
+          setIsWaitlisted(true);
+          setFilaPosition(request.filaPosition ?? null);
+          setIsUnderReview(false);
+          setIsRejected(false);
           setRejectionReason(null);
         } else if (request.status === "rejected") {
           setIsUnderReview(false);
           setIsRejected(true);
+          setIsWaitlisted(false);
+          setFilaPosition(null);
           setRejectionReason(request.rejectionReason);
         } else {
           setIsUnderReview(false);
           setIsRejected(false);
+          setIsWaitlisted(false);
+          setFilaPosition(null);
           setRejectionReason(null);
         }
       } catch {
@@ -93,6 +113,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
           setLicenseRequest(null);
           setIsUnderReview(false);
           setIsRejected(false);
+          setIsWaitlisted(false);
+          setFilaPosition(null);
           setRejectionReason(null);
         }
       }
@@ -120,7 +142,14 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
       try {
         ticketData = await apiClient.post<SseTicketResponse>("/license/events/token", {});
       } catch {
+        if (cancelled) {
+          return;
+        }
         startFallbackPolling();
+        return;
+      }
+
+      if (cancelled) {
         return;
       }
 
@@ -137,6 +166,11 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
           cache: "no-store",
           signal: abortController.signal,
         });
+
+        if (cancelled) {
+          abortController.abort();
+          return;
+        }
 
         if (!response.ok || !response.body) {
           startFallbackPolling();
@@ -229,6 +263,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
   const effectiveLoading = enabled ? loading : false;
   const effectiveUnderReview = enabled ? isUnderReview : false;
   const effectiveRejected = enabled ? isRejected : false;
+  const effectiveWaitlisted = enabled ? isWaitlisted : false;
+  const effectiveFilaPosition = enabled ? filaPosition : null;
   const effectiveRejectionReason = enabled ? rejectionReason : null;
 
   return {
@@ -238,6 +274,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
     hasLicense: effectiveLicense !== null,
     isUnderReview: effectiveUnderReview,
     isRejected: effectiveRejected,
+    isWaitlisted: effectiveWaitlisted,
+    filaPosition: effectiveFilaPosition,
     rejectionReason: effectiveRejectionReason,
   };
 }
