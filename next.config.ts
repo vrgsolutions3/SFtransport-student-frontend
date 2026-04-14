@@ -83,7 +83,7 @@ function buildContentSecurityPolicy(): string {
 const offlineRuntimeCaching = [
   {
     urlPattern: /\/dashboard(?:\/card)?\/?$/,
-    handler: 'NetworkFirst',
+    handler: 'NetworkFirst' as const,
     options: {
       cacheName: 'pages-dashboard',
       networkTimeoutSeconds: 5,
@@ -98,7 +98,7 @@ const offlineRuntimeCaching = [
   },
   {
     urlPattern: /\/api\/(auth\/session|v1\/license\/me|v1\/license-request\/me)$/,
-    handler: 'NetworkFirst',
+    handler: 'NetworkFirst' as const,
     options: {
       cacheName: 'api-student-session',
       networkTimeoutSeconds: 5,
