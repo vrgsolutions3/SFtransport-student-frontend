@@ -3,6 +3,7 @@ import { Inter, Manrope } from "next/font/google";
 import Script from "next/script";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import "./globals.css";
 
 const inter = Inter({
@@ -104,6 +105,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${manrope.variable} antialiased`}
       >
+        <ServiceWorkerRegister />
         <ThemeProvider>
           <AuthProvider>
             {children}
