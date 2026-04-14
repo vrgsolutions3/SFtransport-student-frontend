@@ -4,7 +4,6 @@ import { useEffect } from "react";
 
 export function ServiceWorkerRegister() {
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production") return;
     if (!("serviceWorker" in navigator)) return;
 
     const register = async () => {
@@ -18,7 +17,20 @@ export function ServiceWorkerRegister() {
       }
     };
 
-    void register();
+    const onLoad = () => {
+      void register();
+    };
+
+    if (document.readyState === "complete") {
+      onLoad();
+      return;
+    }
+
+    window.addEventListener("load", onLoad);
+
+    return () => {
+      window.removeEventListener("load", onLoad);
+    };
   }, []);
 
   return null;
