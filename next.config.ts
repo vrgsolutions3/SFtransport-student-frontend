@@ -33,6 +33,19 @@ function ensureRequiredEnvVars(): void {
       `Variáveis de ambiente obrigatórias ausentes/vazias: ${missing.join(', ')}`,
     );
   }
+
+  // Na Vercel, localhost/127.0.0.1 não alcança o backend real.
+  if (process.env.VERCEL === '1') {
+    const localHostPattern = /(^|\/\/)(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i;
+    const apiTarget = process.env.API_PROXY_TARGET?.trim() ?? '';
+    const publicApi = process.env.NEXT_PUBLIC_API_URL?.trim() ?? '';
+
+    if (localHostPattern.test(apiTarget) || localHostPattern.test(publicApi)) {
+      throw new Error(
+        'API_PROXY_TARGET/NEXT_PUBLIC_API_URL apontam para localhost em ambiente Vercel. Use URL pública do backend.',
+      );
+    }
+  }
 }
 
 ensureRequiredEnvVars();
@@ -57,11 +70,11 @@ function buildContentSecurityPolicy(): string {
 
   const directives = [
     "default-src 'self'",
-    // Em dev: unsafe-inline necessário pelo Turbopack/Next.js HMR
-    // Em prod: remover unsafe-inline e usar nonce (implementação futura)
+    // Mantém 'unsafe-inline' em prod para não quebrar scripts inline de hidratação do Next.
+    // Evolução recomendada: migrar para nonce/hash por request.
     isDev
       ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
-      : "script-src 'self' 'unsafe-eval'",
+      : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline' https://use.typekit.net",
     "img-src 'self' data: blob: https:",
     `connect-src ${getConnectSrcDirective()}`,
