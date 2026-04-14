@@ -74,9 +74,14 @@ export function LoginForm() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1">
-            Senha
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant ml-1">
+              Senha
+            </label>
+            <Link href="/forgot-password" className="text-xs text-primary font-bold hover:underline">
+              Esqueci a senha
+            </Link>
+          </div>
           <Input
             type="password"
             icon={Lock}
