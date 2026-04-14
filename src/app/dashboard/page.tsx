@@ -10,6 +10,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardGreeting from "@/components/dashboard/DashboardGreeting";
 import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
 import { DashboardActions } from "@/components/dashboard/DashboardActions";
+import { PushNotificationsCard } from "@/components/pwa/PushNotificationsCard";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -73,6 +74,7 @@ export default function DashboardPage() {
             </div>
           </section>
         )}
+        <PushNotificationsCard />
         <DashboardActions
           licenseLoading={licenseLoading}
           hasLicense={hasLicense}
