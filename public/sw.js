@@ -1,27 +1,33 @@
 // Service Worker para VRG Transport PWA
 // Suporta caching estratégico, sync em background e notificações
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `vrg-transport-${CACHE_VERSION}`;
 
 // Assets que sempre devem estar em cache (app shell)
 const CRITICAL_ASSETS = [
   '/',
-  '/dashboard',
   '/login',
   '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
 ];
 
 // Padrões de URLs que devem ser cacheadas
 const CACHE_PATTERNS = {
   static: /\.(js|css|woff2|png|jpg|jpeg|webp|svg|ico)$/i,
-  api: /^https:\/\/vrg-transport-backend\.onrender\.com\/api\/v1/,
+  api: /^\/api\//,
 };
 
 const SKIP_CACHE_PATTERNS = [
-  /localhost/,
-  /^https:\/\/vrg-transport-backend\.onrender\.com\/api\/v1\/auth\//,
+  /^\/api\/auth\//,
 ];
+
+const CARD_PAGE_PATH = '/dashboard/card';
+const OFFLINE_FALLBACK_PATH = '/login';
 
 // ═════════════════════════════════════════════════════════════════════════════
 // INSTALL: Pré-cache dos assets críticos
@@ -72,8 +78,52 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  // Ignora requests de outros domínios.
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  const path = url.pathname;
+
   // Pula requisições que não devem ser cacheadas
-  if (shouldSkipCache(url)) {
+  if (shouldSkipCache(path)) {
+    return;
+  }
+
+  // ── Navegação (HTML): Network First + fallback de cache ──────────────────
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then(async (response) => {
+          if (response.status === 200) {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(request, response.clone());
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cache = await caches.open(CACHE_NAME);
+          const cachedPage = await cache.match(request);
+          if (cachedPage) return cachedPage;
+
+          if (path.startsWith(CARD_PAGE_PATH)) {
+            const cachedCardPage = await cache.match(CARD_PAGE_PATH);
+            if (cachedCardPage) return cachedCardPage;
+          }
+
+          const fallback = await cache.match(OFFLINE_FALLBACK_PATH);
+          if (fallback) return fallback;
+
+          return new Response('Offline', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+          });
+        })
+    );
     return;
   }
 
@@ -93,8 +143,8 @@ self.addEventListener('fetch', (event) => {
         });
       })
         .catch(() => {
-          // Offline: retorna página genérica de offline
-          return caches.match('/offline') ||
+          // Offline: retorna fallback de navegação em cache
+          return caches.match(OFFLINE_FALLBACK_PATH) ||
             new Response('Offline', { status: 503 });
         })
     );
@@ -102,18 +152,18 @@ self.addEventListener('fetch', (event) => {
   }
 
   // ── API: Network First com cache fallback ────────────────────────────────
-  if (request.method === 'GET') {
+  if (CACHE_PATTERNS.api.test(path)) {
     event.respondWith(
       fetch(request)
-        .then((response) => {
+        .then(async (response) => {
           if (response.status === 200) {
-            const cache = caches.open(CACHE_NAME);
-            cache.then((c) => c.put(request, response.clone()));
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(request, response.clone());
           }
           return response;
         })
-        .catch(() => {
-          return caches.match(request) ||
+        .catch(async () => {
+          return (await caches.match(request)) ||
             new Response(
               JSON.stringify({
                 message: 'Você está offline. Tente novamente quando conectado.',
@@ -128,9 +178,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // ── POST/PATCH/DELETE: Network only (sem cache) ──────────────────────────
-  // Requisições de escrita são sempre feitas na rede
-  event.respondWith(fetch(request));
+  // Demais requests GET: network first com fallback em cache.
+  event.respondWith(
+    fetch(request)
+      .then(async (response) => {
+        if (response.status === 200) {
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(request, response.clone());
+        }
+        return response;
+      })
+      .catch(async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        return new Response('Offline', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        });
+      })
+  );
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -171,7 +237,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body || 'Nova notificação',
     icon: '/icons/icon-192.png',
-    badge: '/icons/badge-72.png',
+    badge: '/icons/icon-192.png',
     tag: data.tag || 'notification',
     requireInteraction: data.requireInteraction || false,
     actions: data.actions || [],
@@ -210,8 +276,8 @@ function isStaticAsset(url) {
   return CACHE_PATTERNS.static.test(url.pathname);
 }
 
-function shouldSkipCache(url) {
-  return SKIP_CACHE_PATTERNS.some((pattern) => pattern.test(url.href));
+function shouldSkipCache(pathname) {
+  return SKIP_CACHE_PATTERNS.some((pattern) => pattern.test(pathname));
 }
 
 console.log('[Service Worker] Ready to serve VRG Transport');

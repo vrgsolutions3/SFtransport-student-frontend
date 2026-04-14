@@ -100,6 +100,7 @@ export default function RootLayout({
             if (t === 'dark') document.documentElement.classList.add('dark');
           } catch (e) {}`}
         </Script>
+        <Script src="/sw-register.js" strategy="afterInteractive" />
       </head>
       <body
         className={`${inter.variable} ${manrope.variable} antialiased`}

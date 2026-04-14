@@ -1,4 +1,7 @@
 {
+  "id": "/",
+  "lang": "pt-BR",
+  "dir": "ltr",
   "name": "São Fidélis Transporte",
   "short_name": "VRG Transport",
   "description": "Sistema de transporte institucional para estudantes e servidores",
@@ -8,7 +11,8 @@
   "orientation": "portrait-primary",
   "theme_color": "#1e40af",
   "background_color": "#ffffff",
-  "categories": ["transportation", "productivity"],
+  "prefer_related_applications": false,
+  "categories": ["education", "government", "transportation", "productivity"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -35,7 +39,7 @@
       "purpose": "maskable"
     },
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icons/icon-180.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
