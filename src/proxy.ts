@@ -51,9 +51,9 @@ export const config = {
     /*
      * Aplica o middleware em todas as rotas exceto:
      * - _next/static e _next/image (assets internos do Next.js)
-     * - favicon.ico e outros arquivos estáticos na raiz
+     * - arquivos estáticos (qualquer rota com extensão, ex.: manifest.json, ícones, imagens)
      * - api routes (para não bloquear os endpoints do próprio Next)
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/).*)",
+    "/((?!_next/static|_next/image|api/|.*\\..*).*)",
   ],
 };
