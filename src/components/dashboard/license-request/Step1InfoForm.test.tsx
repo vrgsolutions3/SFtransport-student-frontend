@@ -15,6 +15,15 @@ vi.mock("@/hooks/useInstitutionAutocomplete", () => ({
     courseOptions: ["Informática"],
     handleInstitutionChange: hookMocks.handleInstitutionChange,
     handleCourseChange: hookMocks.handleCourseChange,
+    isInstitutionSelected: true,
+    isCourseSelected: true,
+    normalizeInstitutionInput: (value: string) => value,
+    matchesInstitutionOption: () => true,
+    loadingUniversities: false,
+    loadingCourses: false,
+    loadError: "",
+    institution: "",
+    course: "",
   }),
 }));
 

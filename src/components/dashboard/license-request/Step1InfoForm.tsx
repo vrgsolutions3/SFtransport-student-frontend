@@ -54,6 +54,13 @@ export default function Step1InfoForm({
     courseOptions,
     handleInstitutionChange,
     handleCourseChange,
+    isInstitutionSelected,
+    isCourseSelected,
+    normalizeInstitutionInput,
+    matchesInstitutionOption,
+    loadingUniversities,
+    loadingCourses,
+    loadError,
   } = useInstitutionAutocomplete(data.institution, data.degree);
 
   const updateFormData = (updates: Partial<Step1Data>) => {
@@ -89,6 +96,14 @@ export default function Step1InfoForm({
       }
     }
 
+    if (!isInstitutionSelected) {
+      newErrors.institution = "Selecione uma instituicao valida da lista.";
+    }
+
+    if (!isCourseSelected) {
+      newErrors.degree = "Selecione um curso valido da lista.";
+    }
+
     setErrors(newErrors);
 
     const allTouched: Partial<Record<keyof Step1Data, boolean>> = {
@@ -115,6 +130,15 @@ export default function Step1InfoForm({
     }
   };
 
+  const handleInstitutionBlur = () => {
+    markAsTouched("institution");
+
+    const normalized = normalizeInstitutionInput(data.institution);
+    if (normalized !== data.institution) {
+      onInstitutionChange(normalized);
+    }
+  };
+
   return (
     <form id="license-step1" onSubmit={handleSubmit} className="space-y-5 pb-10">
       <div>
@@ -125,7 +149,13 @@ export default function Step1InfoForm({
           options={institutionOptions}
           value={data.institution}
           onValueChange={onInstitutionChange}
-          onBlur={() => markAsTouched("institution")}
+          filterOption={matchesInstitutionOption}
+          emptyMessage={
+            loadingUniversities
+              ? "Carregando instituicoes..."
+              : "Nenhuma instituicao encontrada"
+          }
+          onBlur={handleInstitutionBlur}
           required
           error={touched.institution ? errors.institution : undefined}
         />
@@ -136,19 +166,26 @@ export default function Step1InfoForm({
           label="Curso"
           icon={BookOpenText}
           placeholder={
-            data.institution
+            isInstitutionSelected
               ? "Digite o nome do curso"
               : "Selecione uma instituição primeiro"
           }
           options={courseOptions}
           value={data.degree}
           onValueChange={onCourseChange}
-          disabled={!data.institution}
+          emptyMessage={loadingCourses ? "Carregando cursos..." : "Nenhum curso encontrado"}
+          disabled={!isInstitutionSelected}
           onBlur={() => markAsTouched("degree")}
           required
           error={touched.degree ? errors.degree : undefined}
         />
       </div>
+
+      {loadError && (
+        <p className="text-xs text-error ml-1" role="alert">
+          {loadError}
+        </p>
+      )}
 
       {/* Turno - Segmented control */}
       <div className="space-y-2">
