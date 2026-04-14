@@ -14,6 +14,9 @@ import { ProfilePhotoSheet } from "@/components/dashboard/profile/ProfilePhotoSh
 import ProfileSkeleton from "@/components/dashboard/profile/ProfileSkeleton";
 import type { StudentProfile } from "@/lib/profileUtils";
 
+const ALLOWED_PROFILE_PHOTO_TYPES = ["image/jpeg", "image/png"];
+const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
+
 export default function ProfilePage() {
   const router = useRouter();
   const { logout } = useAuth();

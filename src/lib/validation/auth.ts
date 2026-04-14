@@ -77,6 +77,33 @@ export const resendCodeSchema = z.object({
   email: emailSchema,
 });
 
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Token e obrigatorio"),
+  password: z
+    .string({ error: "Senha e obrigatoria" })
+    .min(8, "Senha deve ter no minimo 8 caracteres")
+    .max(64, "Senha deve ter no maximo 64 caracteres")
+    .regex(passwordRules, "Senha deve ter maiuscula, minuscula e numero"),
+});
+
+export const resetPasswordFormSchema = z
+  .object({
+    password: z
+      .string({ error: "Senha e obrigatoria" })
+      .min(8, "Senha deve ter no minimo 8 caracteres")
+      .max(64, "Senha deve ter no maximo 64 caracteres")
+      .regex(passwordRules, "Senha deve ter maiuscula, minuscula e numero"),
+    confirmPassword: z.string({ error: "Confirme a senha" }).min(1, "Confirme a senha"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "As senhas nao coincidem",
+    path: ["confirmPassword"],
+  });
+
 export const authUserSchema = z.object({
   id: z.string().min(1),
   role: z.enum(["student", "employee", "admin"]),
@@ -108,6 +135,9 @@ export type RegisterPayloadInput = z.infer<typeof registerPayloadSchema>;
 export type RegisterFormInput = z.infer<typeof registerFormSchema>;
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type ResendCodeInput = z.infer<typeof resendCodeSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ResetPasswordFormInput = z.infer<typeof resetPasswordFormSchema>;
 
 export function getFieldErrors(error: z.ZodError): Record<string, string> {
   const flat = error.flatten().fieldErrors as Record<string, string[] | undefined>;
