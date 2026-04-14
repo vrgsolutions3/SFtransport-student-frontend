@@ -18,6 +18,8 @@ interface AutocompleteInputProps {
   options: string[];
   value: string;
   onValueChange: (value: string) => void;
+  filterOption?: (option: string, input: string) => boolean;
+  emptyMessage?: string;
   disabled?: boolean;
   onBlur?: () => void;
   required?: boolean;
@@ -31,6 +33,8 @@ export function AutocompleteInput({
   options,
   value,
   onValueChange,
+  filterOption,
+  emptyMessage = "Nenhuma opção encontrada",
   disabled = false,
   onBlur,
   required = false,
@@ -45,9 +49,15 @@ export function AutocompleteInput({
   const listboxRef = useRef<HTMLUListElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const filteredOptions = options.filter((opt) =>
-    opt.toLowerCase().includes(value.toLowerCase()),
-  );
+  const normalizedInput = value.trim().toLowerCase();
+
+  const filteredOptions = options.filter((opt) => {
+    if (typeof filterOption === "function") {
+      return filterOption(opt, normalizedInput);
+    }
+
+    return opt.toLowerCase().includes(normalizedInput);
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -207,7 +217,7 @@ export function AutocompleteInput({
       {/* Empty */}
       {isOpen && filteredOptions.length === 0 && value && (
         <div className="absolute left-0 right-0 top-full z-50 mt-1 w-full max-w-full rounded-xl border border-outline-variant/30 bg-surface-container-low p-4 text-center text-on-surface-variant text-sm shadow-lg">
-          Nenhuma opção encontrada
+          {emptyMessage}
         </div>
       )}
 

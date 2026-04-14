@@ -47,6 +47,13 @@ interface AuthContextValue extends AuthState {
   resendCode: (
     email: string
   ) => Promise<{ success: true } | { success: false; error: string }>;
+  forgotPassword: (
+    email: string
+  ) => Promise<{ success: true } | { success: false; error: string }>;
+  resetPassword: (
+    token: string,
+    password: string
+  ) => Promise<{ success: true } | { success: false; error: string; expired?: boolean }>;
 }
 
 interface CsrfMeta {
@@ -56,7 +63,7 @@ interface CsrfMeta {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const PUBLIC_PATHS = ["/login", "/register", "/verify-email", "/verify"];
+const PUBLIC_PATHS = ["/login", "/register", "/verify-email", "/verify", "/forgot-password", "/reset-password"];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname.startsWith(p));
@@ -389,6 +396,68 @@ export function AuthProvider({
     [authFetch],
   );
 
+  const forgotPassword = useCallback(
+    async (
+      email: string
+    ): Promise<{ success: true } | { success: false; error: string }> => {
+      try {
+        const { ok, data } = await authFetch("/api/auth/forgot-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email }),
+        });
+
+        const payload = data as { message?: string };
+
+        if (!ok) {
+          return {
+            success: false,
+            error: typeof payload?.message === "string" ? payload.message : "Erro ao solicitar recuperação",
+          };
+        }
+
+        return { success: true };
+      } catch {
+        return { success: false, error: "Falha ao solicitar recuperação de senha" };
+      }
+    },
+    [authFetch],
+  );
+
+  const resetPassword = useCallback(
+    async (
+      token: string,
+      password: string
+    ): Promise<{ success: true } | { success: false; error: string; expired?: boolean }> => {
+      try {
+        const { ok, data } = await authFetch("/api/auth/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ token, password }),
+        });
+
+        const payload = data as { message?: string; expired?: boolean };
+
+        if (!ok) {
+          const rawMessage = typeof payload?.message === "string" ? payload.message : "Erro ao redefinir senha";
+          const messageIndicatesExpired = /token|expirad|expirou|inválid|invalido/i.test(rawMessage);
+          return {
+            success: false,
+            error: rawMessage,
+            expired: payload?.expired ?? messageIndicatesExpired,
+          };
+        }
+
+        return { success: true };
+      } catch {
+        return { success: false, error: "Falha ao redefinir senha" };
+      }
+    },
+    [authFetch],
+  );
+
   const value: AuthContextValue = {
     ...state,
     login,
@@ -396,6 +465,8 @@ export function AuthProvider({
     register,
     verifyEmail,
     resendCode,
+    forgotPassword,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
