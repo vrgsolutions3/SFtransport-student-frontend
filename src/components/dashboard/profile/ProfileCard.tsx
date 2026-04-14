@@ -32,14 +32,6 @@ export function ProfileCard({
       </div>
       <p className="text-white font-bold text-lg text-center">{name}</p>
       <p className="text-white/70 text-sm text-center">{email}</p>
-      <div className="flex justify-center mt-2">
-        <button
-          onClick={onOpenPhotoSheet}
-          className="text-white/80 text-xs underline"
-        >
-          Alterar foto
-        </button>
-      </div>
     </div>
   );
 }
