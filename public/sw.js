@@ -6,7 +6,6 @@ const CACHE_NAME = `vrg-transport-${CACHE_VERSION}`;
 
 // Assets que sempre devem estar em cache (app shell)
 const CRITICAL_ASSETS = [
-  '/',
   '/login',
   '/register',
   '/forgot-password',
@@ -43,7 +42,8 @@ self.addEventListener('install', (event) => {
     })
       .then(() => self.skipWaiting())
       .catch((err) => {
-        console.warn('[Service Worker] Install failed:', err);
+        console.warn('[Service Worker] Alguns assets nao puderam ser cacheados:', err);
+        return self.skipWaiting();
       })
   );
 });
