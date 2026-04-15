@@ -130,17 +130,16 @@ self.addEventListener('fetch', (event) => {
   // ── Arquivos estáticos: Cache First ──────────────────────────────────────
   if (isStaticAsset(url)) {
     event.respondWith(
-      caches.match(request).then((response) => {
+      caches.match(request).then(async (response) => {
         if (response) return response;
 
-        return fetch(request).then((response) => {
-          // Só cache se for sucesso
-          if (response.status === 200) {
-            const cache = caches.open(CACHE_NAME);
-            cache.then((c) => c.put(request, response.clone()));
-          }
-          return response;
-        });
+        const networkResponse = await fetch(request);
+        // Só cache se for sucesso
+        if (networkResponse.status === 200) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(request, networkResponse.clone());
+        }
+        return networkResponse;
       })
         .catch(() => {
           // Offline: retorna fallback de navegação em cache
