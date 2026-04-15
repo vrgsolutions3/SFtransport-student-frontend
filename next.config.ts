@@ -122,6 +122,22 @@ const offlineRuntimeCaching = [
       },
     },
   },
+  {
+    // Instituições e cursos — necessário para o formulário de solicitação funcionar no PWA
+    urlPattern: /\/api\/v1\/(university|course)/,
+    handler: 'NetworkFirst' as const,
+    options: {
+      cacheName: 'api-institutions',
+      networkTimeoutSeconds: 5,
+      expiration: {
+        maxEntries: 100,
+        maxAgeSeconds: 7 * 24 * 60 * 60,
+      },
+      cacheableResponse: {
+        statuses: [200],
+      },
+    },
+  },
 ];
 
 const nextConfig: NextConfig = {
