@@ -23,6 +23,7 @@ const CACHE_PATTERNS = {
 
 const SKIP_CACHE_PATTERNS = [
   /^\/api\/auth\//,
+  /^\/_next\//, // Next.js gerencia seus próprios chunks — não cachear aqui
 ];
 
 const CARD_PAGE_PATH = '/dashboard/card';
@@ -212,7 +213,7 @@ self.addEventListener('sync', (event) => {
 
 async function retryFailedRequest() {
   try {
-    const db = await new Promise((resolve, reject) => {
+    await new Promise((resolve, reject) => {
       const req = indexedDB.open('vrg-transport-db', 1);
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
