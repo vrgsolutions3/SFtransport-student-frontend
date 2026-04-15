@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "br.com.cheshire.sf_aluno.twa",
+        "sha256_cert_fingerprints": ["46:B1:EE:30:74:42:EE:4B:55:9C:37:9A:F4:6C:6B:B9:4D:DD:E0:36:42:9F:A8:FB:22:34:4A:26:90:27:65:18"]
+      }
+    }]
