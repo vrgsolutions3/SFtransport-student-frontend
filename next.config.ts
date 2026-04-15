@@ -70,8 +70,6 @@ function buildContentSecurityPolicy(): string {
 
   const directives = [
     "default-src 'self'",
-    // Mantém 'unsafe-inline' em prod para não quebrar scripts inline de hidratação do Next.
-    // Evolução recomendada: migrar para nonce/hash por request.
     isDev
       ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
       : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
@@ -102,7 +100,7 @@ const offlineRuntimeCaching = [
       networkTimeoutSeconds: 5,
       expiration: {
         maxEntries: 10,
-        maxAgeSeconds: 7 * 24 * 60 * 60, // 1 semana
+        maxAgeSeconds: 7 * 24 * 60 * 60,
       },
       cacheableResponse: {
         statuses: [200],
@@ -117,7 +115,7 @@ const offlineRuntimeCaching = [
       networkTimeoutSeconds: 5,
       expiration: {
         maxEntries: 20,
-        maxAgeSeconds: 24 * 60 * 60, // 1 dia
+        maxAgeSeconds: 24 * 60 * 60,
       },
       cacheableResponse: {
         statuses: [200],
@@ -130,6 +128,15 @@ const nextConfig: NextConfig = {
   turbopack: {},
   images: {
     qualities: [40, 75],
+  },
+  async rewrites() {
+    return [
+      // Redireciona /.well-known/assetlinks.json para /assetlinks.json (necessário para TWA/PWA no Android)
+      {
+        source: '/.well-known/assetlinks.json',
+        destination: '/assetlinks.json',
+      },
+    ];
   },
   async headers() {
     return [
@@ -156,6 +163,14 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), payment=()',
           },
+        ],
+      },
+      // Content-Type correto para o assetlinks.json
+      {
+        source: '/assetlinks.json',
+        headers: [
+          { key: 'Content-Type', value: 'application/json' },
+          { key: 'Cache-Control', value: 'no-cache' },
         ],
       },
     ];

@@ -61,15 +61,8 @@ export default function DashboardPage() {
                   Sua solicitação está na fila de espera
                 </h2>
                 <p className="text-on-tertiary text-sm/relaxed">
-                  {filaPosition !== null
-                    ? `Você está na posição ${filaPosition} da fila de espera.`
-                    : "A fila ainda não existe."}
-                </p>
-                {/* VERSÃO GENÉRICA — descomentar para testar sem posição numérica:
-                <p className="text-on-tertiary text-sm/relaxed">
                   Sua solicitação está na fila de espera. Você será notificado quando uma vaga for liberada.
                 </p>
-                */}
               </div>
             </div>
           </section>
