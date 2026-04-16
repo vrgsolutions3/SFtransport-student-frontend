@@ -31,7 +31,9 @@ export default function ConfirmSubmitModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={() => { if (!submitting) onClose(); }}
+      onClick={() => {
+        if (!submitting) onClose();
+      }}
     >
       <div
         className="bg-surface w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl px-6 pt-6 pb-10 sm:pb-6 space-y-5"
@@ -56,9 +58,15 @@ export default function ConfirmSubmitModal({
             { label: "Instituição", value: institution },
             { label: "Curso", value: degree },
             { label: "Turno", value: shift },
-            { label: "Períodos", value: `${totalPeriods} período(s) selecionado(s)` },
+            {
+              label: "Períodos",
+              value: `${totalPeriods} período(s) selecionado(s)`,
+            },
           ].map(({ label, value }) => (
-            <div key={label} className="flex justify-between items-center text-sm">
+            <div
+              key={label}
+              className="flex justify-between items-center text-sm"
+            >
               <span className="text-on-surface-variant">{label}</span>
               <span className="text-on-surface font-medium truncate max-w-[60%] text-right">
                 {value}
@@ -68,17 +76,14 @@ export default function ConfirmSubmitModal({
         </div>
 
         {/* Aviso */}
-        <div className="flex items-start gap-2 bg-warning-container/50 rounded-xl px-3 py-2.5">
-          <TriangleAlert className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-          <p className="text-xs text-on-surface leading-relaxed">
-            Certifique-se que os horários coincidem com os documentos enviados na etapa anterior.
-          </p>
-        </div>
-
         {semVagas && (
-          <div className="rounded-lg bg-tertiary-container p-4 text-on-tertiary text-sm leading-relaxed">
-            <strong>Atenção:</strong> Não há vagas disponíveis no momento.
-            Sua solicitação entrará na fila de espera e você será notificado por e-mail quando uma vaga for liberada.
+          <div className="rounded-lg bg-surface-container-high p-4 text-on-surface text-sm leading-relaxed flex items-start gap-3">
+            <TriangleAlert className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+            <p>
+              <strong>Atenção:</strong> Não há vagas disponíveis no momento. Sua
+              solicitação entrará na fila de espera e você será notificado por
+              e-mail quando uma vaga for liberada.
+            </p>
           </div>
         )}
 
