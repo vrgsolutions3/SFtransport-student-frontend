@@ -48,7 +48,6 @@ export default function DashboardPage() {
           >
             <div className="flex items-start gap-3">
               <div className="rounded-full bg-tertiary/15 p-2 shrink-0">
-                {/* Substitua Clock3 pelo ícone correto se necessário */}
                 <svg className="text-on-tertiary w-5 h-5" />
               </div>
               <div className="space-y-1">
