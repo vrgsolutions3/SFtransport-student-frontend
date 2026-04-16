@@ -24,7 +24,6 @@ export default function DashboardPage() {
     isUnderReview,
     isRejected,
     isWaitlisted,
-    filaPosition,
     rejectionReason,
   } = useLicense({
     enabled: isAuthenticated && !authLoading,
@@ -53,7 +52,6 @@ export default function DashboardPage() {
           isUnderReview={isUnderReview}
           isRejected={isRejected}
           isWaitlisted={isWaitlisted}
-          filaPosition={filaPosition}
           hasOpenEnrollmentPeriod={hasOpenPeriod}
           rejectionReason={rejectionReason}
           shouldShowDocumentsCard={shouldShowDocumentsCard}

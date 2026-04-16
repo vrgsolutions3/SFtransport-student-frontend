@@ -11,7 +11,6 @@ interface DashboardActionsProps {
   isUnderReview: boolean;
   isRejected: boolean;
   isWaitlisted: boolean;
-  filaPosition: number | null;
   hasOpenEnrollmentPeriod: boolean;
   rejectionReason: string | null;
   shouldShowDocumentsCard: boolean;
@@ -23,7 +22,6 @@ export function DashboardActions({
   isUnderReview,
   isRejected,
   isWaitlisted,
-  filaPosition,
   hasOpenEnrollmentPeriod,
   rejectionReason,
   shouldShowDocumentsCard,
@@ -36,7 +34,6 @@ export function DashboardActions({
         isUnderReview={isUnderReview}
         isRejected={isRejected}
         isWaitlisted={isWaitlisted}
-        filaPosition={filaPosition}
         hasOpenEnrollmentPeriod={hasOpenEnrollmentPeriod}
         rejectionReason={rejectionReason}
       />

@@ -23,7 +23,6 @@ interface LicenseActionCardProps {
   isUnderReview: boolean;
   isRejected: boolean;
   isWaitlisted: boolean;
-  filaPosition: number | null;
   hasOpenEnrollmentPeriod: boolean;
   rejectionReason: string | null;
 }
@@ -34,7 +33,6 @@ function LicenseActionCardInner({
   isUnderReview,
   isRejected,
   isWaitlisted,
-  filaPosition,
   hasOpenEnrollmentPeriod,
   rejectionReason,
 }: LicenseActionCardProps) {

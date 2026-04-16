@@ -12,7 +12,6 @@ interface UseLicenseResult {
   isUnderReview: boolean;
   isRejected: boolean;
   isWaitlisted: boolean;
-  filaPosition: number | null;
   rejectionReason: string | null;
 }
 
@@ -33,7 +32,6 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
   const [isUnderReview, setIsUnderReview] = useState(false);
   const [isRejected, setIsRejected] = useState(false);
   const [isWaitlisted, setIsWaitlisted] = useState(false);
-  const [filaPosition, setFilaPosition] = useState<number | null>(null);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
   useEffect(() => {
@@ -58,7 +56,7 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
         setIsUnderReview(false);
         setIsRejected(false);
         setIsWaitlisted(false);
-        setFilaPosition(null);
+
         setRejectionReason(null);
         return;
       } catch {
@@ -76,7 +74,7 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
           setIsUnderReview(false);
           setIsRejected(false);
           setIsWaitlisted(false);
-          setFilaPosition(null);
+  
           setRejectionReason(null);
           return;
         }
@@ -87,11 +85,10 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
           setIsUnderReview(true);
           setIsRejected(false);
           setIsWaitlisted(false);
-          setFilaPosition(null);
+  
           setRejectionReason(null);
         } else if (request.status === "waitlisted") {
           setIsWaitlisted(true);
-          setFilaPosition(request.filaPosition ?? null);
           setIsUnderReview(false);
           setIsRejected(false);
           setRejectionReason(null);
@@ -99,13 +96,13 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
           setIsUnderReview(false);
           setIsRejected(true);
           setIsWaitlisted(false);
-          setFilaPosition(null);
+  
           setRejectionReason(request.rejectionReason);
         } else {
           setIsUnderReview(false);
           setIsRejected(false);
           setIsWaitlisted(false);
-          setFilaPosition(null);
+  
           setRejectionReason(null);
         }
       } catch {
@@ -114,7 +111,7 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
           setIsUnderReview(false);
           setIsRejected(false);
           setIsWaitlisted(false);
-          setFilaPosition(null);
+  
           setRejectionReason(null);
         }
       }
@@ -264,7 +261,6 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
   const effectiveUnderReview = enabled ? isUnderReview : false;
   const effectiveRejected = enabled ? isRejected : false;
   const effectiveWaitlisted = enabled ? isWaitlisted : false;
-  const effectiveFilaPosition = enabled ? filaPosition : null;
   const effectiveRejectionReason = enabled ? rejectionReason : null;
 
   return {
@@ -275,7 +271,6 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
     isUnderReview: effectiveUnderReview,
     isRejected: effectiveRejected,
     isWaitlisted: effectiveWaitlisted,
-    filaPosition: effectiveFilaPosition,
     rejectionReason: effectiveRejectionReason,
   };
 }

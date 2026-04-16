@@ -40,7 +40,7 @@ function LicenseStatusCardInner() {
   const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriod({
     enabled: isAuthenticated && !authLoading,
   });
-  const { license, loading, hasLicense, isWaitlisted, filaPosition } = useLicense({
+  const { license, loading, hasLicense, isWaitlisted } = useLicense({
     enabled: isAuthenticated && !authLoading,
   });
   const searchParams = useSearchParams();
@@ -100,9 +100,7 @@ function LicenseStatusCardInner() {
               Na fila de espera
             </p>
             <p className="text-on-tertiary" style={{ fontSize: "12px" }}>
-              {filaPosition !== null
-                ? `Posição atual: ${filaPosition}`
-                : "A fila ainda não existe."}
+              Você será notificado quando uma vaga for liberada.
             </p>
           </div>
           <div className="bg-black/10 rounded-full" style={{ padding: "10px" }}>
