@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff, BellRing } from "lucide-react";
+import { Bell, BellOff } from "lucide-react";
 
 type PushPermissionState = NotificationPermission | "unsupported";
 
@@ -38,26 +38,8 @@ export function PushNotificationsCard() {
     }
   };
 
-  if (permission === "unsupported") {
+  if (permission === "unsupported" || permission === "granted") {
     return null;
-  }
-
-  if (permission === "granted") {
-    return (
-      <section className="mb-4 rounded-2xl border border-success-border bg-success-container p-4 text-on-success">
-        <div className="flex items-start gap-3">
-          <div className="rounded-full bg-success/20 p-2 shrink-0">
-            <BellRing className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="font-headline font-bold text-sm">Notificações ativadas</h2>
-            <p className="text-sm/relaxed">
-              Você receberá alertas importantes quando houver atualizações na sua carteirinha.
-            </p>
-          </div>
-        </div>
-      </section>
-    );
   }
 
   if (permission === "denied") {

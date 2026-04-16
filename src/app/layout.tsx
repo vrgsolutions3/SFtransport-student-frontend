@@ -93,13 +93,7 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
         <link rel="shortcut icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
         
-        <Script id="theme-init" strategy="beforeInteractive">
-          {`try {
-            var t = localStorage.getItem('theme') ||
-              (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            if (t === 'dark') document.documentElement.classList.add('dark');
-          } catch (e) {}`}
-        </Script>
+        {/* Script de tema movido para template.html */}
         <Script src="/sw-register.js" strategy="afterInteractive" />
       </head>
       <body

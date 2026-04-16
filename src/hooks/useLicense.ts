@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/apiClient";
 import type { License, LicenseRequest } from "@/types/license";
 
-interface UseLicenseResult {
+export interface UseLicenseResult {
   license: License | null;
   licenseRequest: LicenseRequest | null;
   loading: boolean;
@@ -234,14 +234,23 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
 
     void connectSse();
 
+
+    // Cooldown para evitar múltiplos fetchs em sequência
+    const lastFetchRef = { current: 0 };
+    const REFETCH_COOLDOWN_MS = 30_000; // 30 segundos
+
     const onFocus = () => {
-      if (!cancelled) {
+      const now = Date.now();
+      if (!cancelled && now - lastFetchRef.current > REFETCH_COOLDOWN_MS) {
+        lastFetchRef.current = now;
         void load();
       }
     };
 
     const onVisibility = () => {
-      if (!cancelled && document.visibilityState === "visible") {
+      const now = Date.now();
+      if (!cancelled && document.visibilityState === "visible" && now - lastFetchRef.current > REFETCH_COOLDOWN_MS) {
+        lastFetchRef.current = now;
         void load();
       }
     };

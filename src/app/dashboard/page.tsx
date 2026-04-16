@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Clock3 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useEnrollmentPeriod } from "@/hooks/useEnrollmentPeriod";
-import { useLicense } from "@/hooks/useLicense";
+import { useEnrollmentPeriodContext } from "@/contexts/EnrollmentPeriodContext";
+import { useLicenseContext } from "@/contexts/LicenseContext";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardGreeting from "@/components/dashboard/DashboardGreeting";
 import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
@@ -15,9 +15,7 @@ import { PushNotificationsCard } from "@/components/pwa/PushNotificationsCard";
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
-  const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriod({
-    enabled: isAuthenticated && !authLoading,
-  });
+  const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriodContext();
   const {
     hasLicense,
     licenseRequest,
@@ -27,9 +25,7 @@ export default function DashboardPage() {
     isWaitlisted,
     filaPosition,
     rejectionReason,
-  } = useLicense({
-    enabled: isAuthenticated && !authLoading,
-  });
+  } = useLicenseContext();
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) router.push("/login");
@@ -67,7 +63,7 @@ export default function DashboardPage() {
             </div>
           </section>
         )}
-        <PushNotificationsCard />
+        {!hasLicense && <PushNotificationsCard />}
         <DashboardActions
           licenseLoading={licenseLoading}
           hasLicense={hasLicense}

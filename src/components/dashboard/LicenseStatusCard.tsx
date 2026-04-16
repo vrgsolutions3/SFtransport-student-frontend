@@ -4,8 +4,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { useEnrollmentPeriod } from "@/hooks/useEnrollmentPeriod";
-import { useLicense } from "@/hooks/useLicense";
+import { useEnrollmentPeriodContext } from "@/contexts/EnrollmentPeriodContext";
+import { useLicenseContext } from "@/contexts/LicenseContext";
 import { License } from "@/types/license";
 import { CreditCard, Hourglass, ListOrdered, Lock, QrCode } from "lucide-react";
 
@@ -37,12 +37,8 @@ function statusColor(status: License["status"]) {
 
 function LicenseStatusCardInner() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriod({
-    enabled: isAuthenticated && !authLoading,
-  });
-  const { license, loading, hasLicense, isWaitlisted, filaPosition } = useLicense({
-    enabled: isAuthenticated && !authLoading,
-  });
+  const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriodContext();
+  const { license, loading, hasLicense, isWaitlisted, filaPosition } = useLicenseContext();
   const searchParams = useSearchParams();
   const justRequested = searchParams.get("requested") === "true";
 

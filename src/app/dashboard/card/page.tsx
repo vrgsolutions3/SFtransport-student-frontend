@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useLicense } from "@/hooks/useLicense";
+import { useLicenseContext } from "@/contexts/LicenseContext";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { CardViewer } from "@/components/dashboard/card/CardViewer";
 import { CardLightbox } from "@/components/dashboard/card/CardLightbox";
@@ -21,9 +21,7 @@ function getOfflineLicenseCacheKey(userId?: string): string {
 
 export default function CardPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { license, loading, hasLicense } = useLicense({
-    enabled: isAuthenticated && !authLoading,
-  });
+  const { license, loading, hasLicense } = useLicenseContext();
   const [offlineLicense, setOfflineLicense] = useState<typeof license>(null);
   const [isOffline, setIsOffline] = useState(() =>
     typeof navigator !== "undefined" ? !navigator.onLine : false,
