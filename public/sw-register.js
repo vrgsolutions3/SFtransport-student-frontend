@@ -6,9 +6,6 @@
   window.addEventListener("load", function () {
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })
-      .then(function (registration) {
-        registration.update();
-      })
       .catch(function (error) {
         console.warn("Falha ao registrar service worker:", error);
       });

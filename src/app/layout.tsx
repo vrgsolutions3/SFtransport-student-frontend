@@ -3,6 +3,7 @@ import { Inter, Manrope } from "next/font/google";
 import Script from "next/script";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001"
   ),
   title: "São Fidélis Transporte",
-  description: "Sistema de transporte institucional para estudantes e servidores",
+  description: "Sistema de transporte institucional para estudantes",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -100,9 +101,11 @@ export default function RootLayout({
         className={`${inter.variable} ${manrope.variable} antialiased`}
       >
         <ThemeProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <NotificationsProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </NotificationsProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -37,8 +37,9 @@ function statusColor(status: License["status"]) {
 
 function LicenseStatusCardInner() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  // Mantém o uso dos contexts para garantir consistência
   const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriodContext();
-  const { license, loading, hasLicense, isWaitlisted, filaPosition } = useLicenseContext();
+  const { license, loading, hasLicense, isWaitlisted } = useLicenseContext();
   const searchParams = useSearchParams();
   const justRequested = searchParams.get("requested") === "true";
 
@@ -96,9 +97,7 @@ function LicenseStatusCardInner() {
               Na fila de espera
             </p>
             <p className="text-on-tertiary" style={{ fontSize: "12px" }}>
-              {filaPosition !== null
-                ? `Posição atual: ${filaPosition}`
-                : "A fila ainda não existe."}
+              Você será notificado quando uma vaga for liberada.
             </p>
           </div>
           <div className="bg-black/10 rounded-full" style={{ padding: "10px" }}>

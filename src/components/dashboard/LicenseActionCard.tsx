@@ -2,7 +2,14 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
-import { CreditCard, BadgeCheck, Clock3, ListOrdered, Lock, XCircle } from "lucide-react";
+import {
+  CreditCard,
+  BadgeCheck,
+  Clock3,
+  ListOrdered,
+  Lock,
+  XCircle,
+} from "lucide-react";
 
 function Skeleton() {
   return (
@@ -16,7 +23,6 @@ interface LicenseActionCardProps {
   isUnderReview: boolean;
   isRejected: boolean;
   isWaitlisted: boolean;
-  filaPosition: number | null;
   hasOpenEnrollmentPeriod: boolean;
   rejectionReason: string | null;
 }
@@ -27,32 +33,28 @@ function LicenseActionCardInner({
   isUnderReview,
   isRejected,
   isWaitlisted,
-  filaPosition,
   hasOpenEnrollmentPeriod,
   rejectionReason,
 }: LicenseActionCardProps) {
-
   if (loading) return <Skeleton />;
 
   if (isWaitlisted) {
     return (
       <div
-        className="flex cursor-not-allowed items-center justify-between rounded-xl bg-tertiary-container p-6"
-        style={{ boxShadow: "0 4px 20px var(--shadow-tertiary)" }}
+        className="flex cursor-not-allowed items-center justify-between rounded-xl bg-surface-container-low border border-outline-variant/30 p-6"
         aria-disabled="true"
+        style={{ boxShadow: "var(--shadow-card)" }}
       >
         <div>
-          <h3 className="font-headline text-lg font-bold text-on-tertiary mb-1">
+          <h3 className="font-headline text-lg font-bold text-on-surface mb-1">
             Na fila de espera
           </h3>
-          <p className="text-sm text-on-tertiary/90">
-            {filaPosition !== null
-              ? `Posição atual: ${filaPosition}`
-              : "A fila ainda não existe."}
+          <p className="text-sm text-on-surface-variant">
+            Você será notificado quando uma vaga for liberada.
           </p>
         </div>
-        <div className="bg-black/10 rounded-full p-3 shrink-0 ml-4">
-          <ListOrdered className="text-on-tertiary w-7 h-7" />
+        <div className="bg-surface-container-high rounded-full p-3 shrink-0 ml-4">
+          <ListOrdered className="text-primary w-7 h-7" />
         </div>
       </div>
     );
@@ -84,7 +86,9 @@ function LicenseActionCardInner({
     return (
       <div
         className="flex flex-col rounded-xl bg-error-container border border-error/30 p-5"
-        style={{ boxShadow: "0 4px 20px var(--shadow-error, rgba(186,26,26,0.15))" }}
+        style={{
+          boxShadow: "0 4px 20px var(--shadow-error, rgba(186,26,26,0.15))",
+        }}
       >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">

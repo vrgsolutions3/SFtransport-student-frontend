@@ -21,6 +21,5 @@ export interface LicenseRequest {
   rejectedAt: string | null;
   licenseId: string | null;
   enrollmentPeriodId?: string | null;
-  filaPosition?: number | null;
   createdAt: string;
 }

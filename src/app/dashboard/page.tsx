@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Clock3 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useEnrollmentPeriodContext } from "@/contexts/EnrollmentPeriodContext";
 import { useLicenseContext } from "@/contexts/LicenseContext";
@@ -23,7 +22,6 @@ export default function DashboardPage() {
     isUnderReview,
     isRejected,
     isWaitlisted,
-    filaPosition,
     rejectionReason,
   } = useLicenseContext();
 
@@ -50,7 +48,8 @@ export default function DashboardPage() {
           >
             <div className="flex items-start gap-3">
               <div className="rounded-full bg-tertiary/15 p-2 shrink-0">
-                <Clock3 className="text-on-tertiary w-5 h-5" />
+                {/* Substitua Clock3 pelo ícone correto se necessário */}
+                <svg className="text-on-tertiary w-5 h-5" />
               </div>
               <div className="space-y-1">
                 <h2 className="font-headline font-bold text-on-tertiary text-sm">
@@ -70,7 +69,6 @@ export default function DashboardPage() {
           isUnderReview={isUnderReview}
           isRejected={isRejected}
           isWaitlisted={isWaitlisted}
-          filaPosition={filaPosition}
           hasOpenEnrollmentPeriod={hasOpenPeriod}
           rejectionReason={rejectionReason}
           shouldShowDocumentsCard={shouldShowDocumentsCard}

@@ -10,9 +10,7 @@ export interface PersistedDocumentEntry {
 export type PersistedStep2 = Record<string, PersistedDocumentEntry | null>;
 
 export function makeEmptyEntries(): DocumentEntries {
-  return Object.fromEntries(
-    LICENSE_DOCUMENTS.map((d) => [d.photoType, null])
-  );
+  return Object.fromEntries(LICENSE_DOCUMENTS.map((d) => [d.photoType, null]));
 }
 
 export function fileToDataUrl(file: File): Promise<string> {
@@ -25,7 +23,7 @@ export function fileToDataUrl(file: File): Promise<string> {
 }
 
 export async function serializeDocumentEntries(
-  entries: DocumentEntries
+  entries: DocumentEntries,
 ): Promise<PersistedStep2> {
   const serialized: PersistedStep2 = {};
 
@@ -49,17 +47,23 @@ export async function serializeDocumentEntries(
   return serialized;
 }
 
-export async function dataUrlToFile(
+export function dataUrlToFile(
   dataUrl: string,
   fileName: string,
   type: string,
-): Promise<File> {
-  const res = await fetch(dataUrl);
-  const blob = await res.blob();
-  return new File([blob], fileName, { type });
+): File {
+  const [, base64] = dataUrl.split(",");
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new File([bytes], fileName, { type });
 }
 
-export async function deserializeDocumentEntries(data: PersistedStep2): Promise<DocumentEntries> {
+export async function deserializeDocumentEntries(
+  data: PersistedStep2,
+): Promise<DocumentEntries> {
   const hydrated = makeEmptyEntries();
 
   for (const doc of LICENSE_DOCUMENTS) {
