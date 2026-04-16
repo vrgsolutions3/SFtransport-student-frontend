@@ -1,10 +1,60 @@
 "use client";
 
-import { CreditCard } from "lucide-react";
+import { CreditCard, Clock3, ListOrdered } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export function CardNoLicense() {
+interface CardNoLicenseProps {
+  isUnderReview: boolean;
+  isWaitlisted: boolean;
+  isRejected: boolean;
+  filaPosition: number | null;
+}
+
+export function CardNoLicense({
+  isUnderReview,
+  isWaitlisted,
+  filaPosition,
+}: CardNoLicenseProps) {
   const router = useRouter();
+
+  if (isUnderReview) {
+    return (
+      <main className="pt-20 pb-10 px-4 max-w-lg mx-auto flex flex-col items-center text-center gap-6">
+        <div className="w-20 h-20 rounded-full bg-warning/10 flex items-center justify-center mt-8">
+          <Clock3 className="text-warning" size={36} />
+        </div>
+        <div>
+          <h2 className="font-headline font-bold text-on-surface text-xl mb-2">
+            Carteirinha em análise
+          </h2>
+          <p className="text-on-surface-variant text-sm leading-relaxed">
+            Estamos validando seus documentos. Você será notificado quando
+            houver uma atualização.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (isWaitlisted) {
+    return (
+      <main className="pt-20 pb-10 px-4 max-w-lg mx-auto flex flex-col items-center text-center gap-6">
+        <div className="w-20 h-20 rounded-full bg-tertiary/10 flex items-center justify-center mt-8">
+          <ListOrdered className="text-on-tertiary" size={36} />
+        </div>
+        <div>
+          <h2 className="font-headline font-bold text-on-surface text-xl mb-2">
+            Na fila de espera
+          </h2>
+          <p className="text-on-surface-variant text-sm leading-relaxed">
+            {filaPosition !== null
+              ? `Você está na posição ${filaPosition} da fila. Será notificado quando uma vaga for liberada.`
+              : "Você está na fila de espera. Será notificado quando uma vaga for liberada."}
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="pt-20 pb-10 px-4 max-w-lg mx-auto flex flex-col items-center text-center gap-6">
