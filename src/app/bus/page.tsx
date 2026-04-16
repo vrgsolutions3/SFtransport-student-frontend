@@ -13,14 +13,20 @@ export default function BusRoutesPage() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch("/api/v1/bus")
+    const controller = new AbortController();
+
+    fetch("/api/v1/bus", { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error();
         return res.json();
       })
       .then((data) => setRoutes(data))
-      .catch(() => setError(true))
+      .catch((err) => {
+        if (err.name !== "AbortError") setError(true);
+      })
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, []);
 
   return (
