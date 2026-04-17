@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { apiClient } from "@/lib/apiClient";
 import type { License, LicenseRequest } from "@/types/license";
 
@@ -13,6 +13,7 @@ export interface UseLicenseResult {
   isRejected: boolean;
   isWaitlisted: boolean;
   rejectionReason: string | null;
+  refresh: () => void;
 }
 
 interface UseLicenseOptions {
@@ -33,6 +34,8 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
   const [isRejected, setIsRejected] = useState(false);
   const [isWaitlisted, setIsWaitlisted] = useState(false);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+  const loadRef = useRef<() => void>(() => {});
+  const refresh = useCallback(() => loadRef.current(), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,6 +119,7 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
         }
       }
     };
+    loadRef.current = load;
 
     const clearFallbackPolling = () => {
       if (fallbackIntervalId !== null) {
@@ -281,5 +285,6 @@ export function useLicense(options: UseLicenseOptions = {}): UseLicenseResult {
     isRejected: effectiveRejected,
     isWaitlisted: effectiveWaitlisted,
     rejectionReason: effectiveRejectionReason,
+    refresh,
   };
 }
