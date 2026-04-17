@@ -100,6 +100,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${manrope.variable} antialiased`}
       >
+        <ServiceWorkerRegister />
         <ThemeProvider>
           <NotificationsProvider>
             <AuthProvider>

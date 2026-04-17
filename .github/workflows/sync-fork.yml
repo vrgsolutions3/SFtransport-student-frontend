@@ -1,0 +1,20 @@
+name: Sync fork on push
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.FORK_SYNC_TOKEN }}
+
+      - name: Push to fork
+        env:
+          TOKEN: ${{ secrets.FORK_SYNC_TOKEN }}
+        run: |
+          git remote add fork https://x-access-token:${TOKEN}@github.com/vrgsolutions3/SFtransport-student-frontend.git
+          git push fork main
