@@ -13,6 +13,7 @@ import { ProfileSchedule } from "@/components/dashboard/profile/ProfileSchedule"
 import { ProfilePhotoSheet } from "@/components/dashboard/profile/ProfilePhotoSheet";
 import ProfileSkeleton from "@/components/dashboard/profile/ProfileSkeleton";
 import type { StudentProfile } from "@/lib/profileUtils";
+import { NotificationToggleRow } from "@/components/dashboard/profile/NotificationToggleRow";
 
 const ALLOWED_PROFILE_PHOTO_TYPES = ["image/jpeg", "image/png"];
 const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
@@ -120,6 +121,13 @@ export default function ProfilePage() {
         <ProfileAcademicInfo academicRows={academicRows} />
 
         <ProfileSchedule schedule={profile.schedule} />
+
+        <div className="bg-surface-container-low rounded-2xl px-5 py-4 mb-4">
+          <p className="text-sm font-medium text-on-surface-variant mb-3">
+            Preferências
+          </p>
+          <NotificationToggleRow />
+        </div>
 
         <button
           onClick={logout}

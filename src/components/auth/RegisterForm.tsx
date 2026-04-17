@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { formatPhone } from "@/lib/formatters";
 import { Mail, Phone, UserRound, Lock, Send, CreditCard } from "lucide-react";
 import { getFieldErrors, registerFormSchema } from "@/lib/validation/auth";
+import { EulaModal } from "./EulaModal";
 
 function formatCpf(digits: string): string {
   if (digits.length === 0) return "";
@@ -23,6 +24,8 @@ export function RegisterForm() {
   const router = useRouter();
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [eulaOpen, setEulaOpen] = useState(false);
+  const [eulaAccepted, setEulaAccepted] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -45,12 +48,10 @@ export function RegisterForm() {
 
   const validateForm = () => {
     const result = registerFormSchema.safeParse(formData);
-
     if (result.success) {
       setErrors({});
       return true;
     }
-
     setErrors(getFieldErrors(result.error));
     return false;
   };
@@ -58,6 +59,13 @@ export function RegisterForm() {
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+    if (!eulaAccepted) {
+      setErrors((prev) => ({
+        ...prev,
+        general: "Você precisa aceitar os Termos de Uso para continuar.",
+      }));
+      return;
+    }
     setLoading(true);
     try {
       const result = await register({
@@ -69,9 +77,14 @@ export function RegisterForm() {
       });
 
       if (result.success) {
-        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+        router.push(
+          `/verify-email?email=${encodeURIComponent(formData.email)}`,
+        );
       } else {
-        setErrors((prev) => ({ ...prev, general: result.error ?? "Erro ao criar conta" }));
+        setErrors((prev) => ({
+          ...prev,
+          general: result.error ?? "Erro ao criar conta",
+        }));
       }
     } finally {
       setLoading(false);
@@ -145,7 +158,9 @@ export function RegisterForm() {
           icon={Lock}
           placeholder="Mín. 8 caracteres, maiúscula e número"
           value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, password: e.target.value })
+          }
           error={errors.password}
           maxLength={64}
         />
@@ -156,10 +171,53 @@ export function RegisterForm() {
           icon={Lock}
           placeholder="Digite a senha novamente"
           value={formData.confirmPassword}
-          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, confirmPassword: e.target.value })
+          }
           error={errors.confirmPassword}
           maxLength={64}
         />
+
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            type="button"
+            onClick={() => {
+              if (!eulaAccepted) setEulaOpen(true);
+              else setEulaAccepted(false);
+            }}
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+              eulaAccepted
+                ? "bg-primary border-primary"
+                : "bg-transparent border-outline"
+            }`}
+          >
+            {eulaAccepted && (
+              <svg
+                className="w-3 h-3 text-white"
+                viewBox="0 0 12 12"
+                fill="none"
+              >
+                <path
+                  d="M2 6l3 3 5-5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
+          </button>
+          <label className="text-sm text-on-surface-variant leading-snug">
+            Li e aceito os{" "}
+            <button
+              type="button"
+              onClick={() => setEulaOpen(true)}
+              className="text-primary font-semibold hover:underline"
+            >
+              Termos de Uso
+            </button>
+          </label>
+        </div>
 
         <Button
           type="submit"
@@ -174,10 +232,23 @@ export function RegisterForm() {
         </Button>
       </form>
 
+      <EulaModal
+        key={String(eulaOpen)}
+        open={eulaOpen}
+        onClose={() => setEulaOpen(false)}
+        onAccept={() => {
+          setEulaAccepted(true);
+          setEulaOpen(false);
+        }}
+      />
+
       <div className="mt-8 pt-6 border-t border-surface-container-high text-center">
         <p className="text-on-surface-variant text-sm">
           Já possui uma conta?
-          <Link href="/login" className="text-primary font-bold hover:underline ml-1">
+          <Link
+            href="/login"
+            className="text-primary font-bold hover:underline ml-1"
+          >
             Fazer login
           </Link>
         </p>

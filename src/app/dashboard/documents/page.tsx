@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { apiClient } from "@/lib/apiClient";
 import { useAuth } from "@/hooks/useAuth";
-import { useLicense } from "@/hooks/useLicense";
+import { useLicenseContext } from "@/contexts/LicenseContext";
 import { DocumentsSkeleton } from "@/components/dashboard/documents/DocumentsSkeleton";
 import { DocumentCard } from "@/components/dashboard/documents/DocumentCard";
 import { DocumentPreview } from "@/components/dashboard/documents/DocumentPreview";
@@ -27,9 +27,7 @@ function DocumentsPageContent() {
     hasLicense,
     licenseRequest,
     loading: licenseLoading,
-  } = useLicense({
-    enabled: isAuthenticated && !authLoading,
-  });
+  } = useLicenseContext();
 
   const [loading, setLoading] = useState(true);
   const [images, setImages] = useState<StudentImage[]>([]);

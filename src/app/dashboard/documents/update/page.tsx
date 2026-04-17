@@ -10,7 +10,7 @@ import { type Step3Data } from "@/components/dashboard/license-request/Step3grad
 import { useAuth } from "@/hooks/useAuth";
 import { useNSFW } from "@/hooks/useNSFW";
 import { useImageProcessor } from "@/hooks/useImageProcessor";
-import { useLicense } from "@/hooks/useLicense";
+import { useLicenseContext } from "@/contexts/LicenseContext";
 import { apiClient } from "@/lib/apiClient";
 import {
   buildInitialSelections,
@@ -43,9 +43,7 @@ export default function UpdateDocumentsRequestPage() {
     licenseRequest,
     isUnderReview,
     loading: loadingLicense,
-  } = useLicense({
-    enabled: isAuthenticated && !authLoading,
-  });
+  } = useLicenseContext();
   const [checkingInitialDocuments, setCheckingInitialDocuments] =
     useState(true);
   const [hasInitialDocuments, setHasInitialDocuments] = useState(false);

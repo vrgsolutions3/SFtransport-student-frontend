@@ -2,12 +2,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { ArrowLeft, Lock } from "lucide-react";
 import { api } from "@/lib/api";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
-import { useEnrollmentPeriod } from "@/hooks/useEnrollmentPeriod";
-import { useLicense } from "@/hooks/useLicense";
+import { useEnrollmentPeriodContext } from "@/contexts/EnrollmentPeriodContext";
+import { useLicenseContext } from "@/contexts/LicenseContext";
 import StepIndicator from "@/components/dashboard/license-request/StepIndicator";
 import Step1InfoForm, {
   Step1Data,
@@ -33,6 +31,8 @@ import {
 } from "@/lib/storageWithTTL";
 import type { DocumentEntries } from "@/components/dashboard/license-request/Step2Documents";
 import type { PersistedStep2 } from "@/lib/documentEntries";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ArrowLeft, Lock } from "lucide-react";
 
 const STORAGE_KEY = "license_request_step1";
 const STORAGE_KEY_STEP2 = "license_request_step2";
@@ -63,21 +63,17 @@ const Step2Documents = dynamic(
   },
 );
 
+
 export default function RequestLicensePage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { isUnderReview, isWaitlisted, loading, licenseRequest } = useLicense({
-    enabled: isAuthenticated && !authLoading,
-  });
-  const { loading: periodLoading, hasOpenPeriod, semVagas } = useEnrollmentPeriod({
-    enabled: isAuthenticated && !authLoading,
-  });
+  const { isUnderReview, isWaitlisted, loading, licenseRequest } = useLicenseContext();
+  const { loading: periodLoading, hasOpenPeriod, semVagas } = useEnrollmentPeriodContext();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [step1, setStep1] = useState<Step1Data>(EMPTY_STEP1);
   const [step3, setStep3] = useState<Step3Data>(EMPTY_STEP3);
-  const [documentEntries, setDocumentEntries] =
-    useState<DocumentEntries>(makeEmptyEntries());
+  const [documentEntries, setDocumentEntries] = useState<DocumentEntries>(makeEmptyEntries());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -108,10 +104,7 @@ export default function RequestLicensePage() {
     const savedStep3 = getWithTTL<Step3Data>(STORAGE_KEY_STEP3, ONE_DAY_MS);
     if (savedStep3) setStep3(savedStep3);
 
-    const savedStep2 = getWithTTL<PersistedStep2>(
-      STORAGE_KEY_STEP2,
-      ONE_DAY_MS,
-    );
+    const savedStep2 = getWithTTL<PersistedStep2>(STORAGE_KEY_STEP2, ONE_DAY_MS);
     if (savedStep2) {
       void deserializeDocumentEntries(savedStep2).then((entries) => {
         if (!cancelled) setDocumentEntries(entries);

@@ -2,10 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Clock3 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useEnrollmentPeriod } from "@/hooks/useEnrollmentPeriod";
-import { useLicense } from "@/hooks/useLicense";
+import { useEnrollmentPeriodContext } from "@/contexts/EnrollmentPeriodContext";
+import { useLicenseContext } from "@/contexts/LicenseContext";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardGreeting from "@/components/dashboard/DashboardGreeting";
 import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
@@ -15,9 +14,7 @@ import { PushNotificationsCard } from "@/components/pwa/PushNotificationsCard";
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
-  const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriod({
-    enabled: isAuthenticated && !authLoading,
-  });
+  const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriodContext();
   const {
     hasLicense,
     licenseRequest,
@@ -25,11 +22,8 @@ export default function DashboardPage() {
     isUnderReview,
     isRejected,
     isWaitlisted,
-    filaPosition,
     rejectionReason,
-  } = useLicense({
-    enabled: isAuthenticated && !authLoading,
-  });
+  } = useLicenseContext();
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) router.push("/login");
@@ -54,7 +48,7 @@ export default function DashboardPage() {
           >
             <div className="flex items-start gap-3">
               <div className="rounded-full bg-tertiary/15 p-2 shrink-0">
-                <Clock3 className="text-on-tertiary w-5 h-5" />
+                <svg className="text-on-tertiary w-5 h-5" />
               </div>
               <div className="space-y-1">
                 <h2 className="font-headline font-bold text-on-tertiary text-sm">
@@ -67,14 +61,13 @@ export default function DashboardPage() {
             </div>
           </section>
         )}
-        <PushNotificationsCard />
+        {!hasLicense && <PushNotificationsCard />}
         <DashboardActions
           licenseLoading={licenseLoading}
           hasLicense={hasLicense}
           isUnderReview={isUnderReview}
           isRejected={isRejected}
           isWaitlisted={isWaitlisted}
-          filaPosition={filaPosition}
           hasOpenEnrollmentPeriod={hasOpenPeriod}
           rejectionReason={rejectionReason}
           shouldShowDocumentsCard={shouldShowDocumentsCard}

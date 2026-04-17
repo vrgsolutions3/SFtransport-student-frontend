@@ -4,8 +4,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { useEnrollmentPeriod } from "@/hooks/useEnrollmentPeriod";
-import { useLicense } from "@/hooks/useLicense";
+import { useEnrollmentPeriodContext } from "@/contexts/EnrollmentPeriodContext";
+import { useLicenseContext } from "@/contexts/LicenseContext";
 import { License } from "@/types/license";
 import { CreditCard, Hourglass, ListOrdered, Lock, QrCode } from "lucide-react";
 
@@ -37,12 +37,9 @@ function statusColor(status: License["status"]) {
 
 function LicenseStatusCardInner() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriod({
-    enabled: isAuthenticated && !authLoading,
-  });
-  const { license, loading, hasLicense, isWaitlisted, filaPosition } = useLicense({
-    enabled: isAuthenticated && !authLoading,
-  });
+  // Mantém o uso dos contexts para garantir consistência
+  const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriodContext();
+  const { license, loading, hasLicense, isWaitlisted } = useLicenseContext();
   const searchParams = useSearchParams();
   const justRequested = searchParams.get("requested") === "true";
 
@@ -100,9 +97,7 @@ function LicenseStatusCardInner() {
               Na fila de espera
             </p>
             <p className="text-on-tertiary" style={{ fontSize: "12px" }}>
-              {filaPosition !== null
-                ? `Posição atual: ${filaPosition}`
-                : "A fila ainda não existe."}
+              Você será notificado quando uma vaga for liberada.
             </p>
           </div>
           <div className="bg-black/10 rounded-full" style={{ padding: "10px" }}>
