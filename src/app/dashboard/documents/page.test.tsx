@@ -43,8 +43,8 @@ vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => mocks.authState,
 }));
 
-vi.mock("@/hooks/useLicense", () => ({
-  useLicense: () => mocks.licenseState,
+vi.mock("@/contexts/LicenseContext", () => ({
+  useLicenseContext: () => mocks.licenseState,
 }));
 
 vi.mock("@/lib/apiClient", () => ({
