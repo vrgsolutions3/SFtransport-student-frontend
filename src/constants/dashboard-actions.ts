@@ -1,4 +1,4 @@
-import { FolderOpen, QrCode, UserCog, type LucideIcon } from "lucide-react";
+import { FolderOpen, Map, type LucideIcon } from "lucide-react";
 
 export interface DashboardAction {
   href: string;
@@ -22,12 +22,11 @@ export const DOCUMENTS_ACTION: DashboardAction = {
 export const DASHBOARD_ACTIONS: DashboardAction[] = [
   DOCUMENTS_ACTION,
   {
-    href: "/dashboard/card",
-    title: "Visualização da carteirinha",
-    description: "Sua carteira digital QR Code",
-    disabledDescription: "Crie sua carteirinha para visualizá-la aqui",
-    icon: QrCode,
+    href: "/bus",
+    title: "Ver Rotas Ativas",
+    description: "Consulte as rotas e horários disponíveis",
+    icon: Map,
     variant: "primary",
-    requiresLicense: true,
+    requiresLicense: false,
   },
 ];
