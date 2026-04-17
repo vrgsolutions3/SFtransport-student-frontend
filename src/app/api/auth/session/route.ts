@@ -26,11 +26,19 @@ export async function GET(request: NextRequest) {
   };
 
   try {
-    const meRes = await fetch(`${getBackendApiBaseUrl()}/auth/me`, {
-      method: "GET",
-      headers: baseHeaders,
-      cache: "no-store",
-    });
+    // Paraleliza as duas requisições
+    const [meRes, profileRes] = await Promise.all([
+      fetch(`${getBackendApiBaseUrl()}/auth/me`, {
+        method: "GET",
+        headers: baseHeaders,
+        cache: "no-store",
+      }),
+      fetch(`${getBackendApiBaseUrl()}/student/me`, {
+        method: "GET",
+        headers: baseHeaders,
+        cache: "no-store",
+      }),
+    ]);
 
     if (!meRes.ok) {
       const response = NextResponse.json({ message: "Sessão inválida.", csrf }, { status: 401 });
@@ -52,12 +60,6 @@ export async function GET(request: NextRequest) {
         { status: 403 },
       );
     }
-
-    const profileRes = await fetch(`${getBackendApiBaseUrl()}/student/me`, {
-      method: "GET",
-      headers: baseHeaders,
-      cache: "no-store",
-    });
 
     const profileData = profileRes.ok ? await profileRes.json().catch(() => ({})) : {};
 

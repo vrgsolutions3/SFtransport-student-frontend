@@ -9,7 +9,7 @@ interface UseEnrollmentPeriodOptions {
   enabled?: boolean;
 }
 
-interface UseEnrollmentPeriodResult {
+export interface UseEnrollmentPeriodResult {
   period: EnrollmentPeriod | null;
   loading: boolean;
   hasOpenPeriod: boolean;

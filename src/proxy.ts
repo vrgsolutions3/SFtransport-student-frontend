@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const AUTH_PUBLIC_PATHS = ["/login", "/register", "/verify-email", "/forgot-password", "/reset-password"];
-const UTILITY_PUBLIC_PATHS = ["/verify"];
+const UTILITY_PUBLIC_PATHS = ["/verify", "/bus"];
 const PUBLIC_PATHS = [...AUTH_PUBLIC_PATHS, ...UTILITY_PUBLIC_PATHS];
 
 export function proxy(request: NextRequest) {
