@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { SearchX } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function NotFound() {
@@ -12,15 +10,15 @@ export default function NotFound() {
         Você perdeu o ônibus... e essa página também.
       </p>
 
-      <div className="relative w-[480px] h-[340px]">
+      <div className="relative w-120 h-85">
 
         {/* chão */}
-        <div className="absolute bottom-8 w-full h-[2px] bg-slate-700" />
+        <div className="absolute bottom-8 w-full h-0.5 bg-slate-700" />
 
         {/* aluno estilizado (SVG mais rico) */}
         <motion.svg
           viewBox="0 0 200 200"
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[160px]"
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 w-40"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -75,7 +73,7 @@ export default function NotFound() {
         {/* ônibus estilo ilustrado */}
         <motion.svg
           viewBox="0 0 200 120"
-          className="absolute left-1/2 -translate-x-1/2 w-[220px]"
+          className="absolute left-1/2 -translate-x-1/2 w-55"
           initial={{ y: 0, opacity: 1 }}
           animate={{ y: -220, opacity: 0 }}
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
