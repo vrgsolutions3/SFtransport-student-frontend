@@ -2,8 +2,6 @@ export const EULA_TEXT = `
 TERMOS DE USO — SISTEMA DE TRANSPORTE INSTITUCIONAL
 São Fidélis Transporte
 
-[TEXTO PLACEHOLDER — substituir pelo texto jurídico oficial antes de publicar]
-
 1. ACEITAÇÃO DOS TERMOS
 
 Ao criar uma conta e utilizar o Sistema de Transporte Institucional ("Sistema"), você concorda com estes Termos de Uso. Caso não concorde com qualquer disposição aqui prevista, não prossiga com o cadastro.
@@ -48,5 +46,5 @@ Estes Termos podem ser atualizados a qualquer momento. O usuário será notifica
 
 Em caso de dúvidas, entre em contato com a administração pelo suporte disponível no Sistema.
 
-Versão: 1.0 — [Data de vigência a definir]
+Versão: 1.0 — Vigência: 2024-01-01
 `.trim();
