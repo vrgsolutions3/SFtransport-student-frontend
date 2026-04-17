@@ -5,17 +5,26 @@ interface StorageEntry<T> {
   timestamp: number;
 }
 
+function isStorageAvailable(): boolean {
+  if (typeof window === "undefined") return false;
+  return typeof window.localStorage !== "undefined";
+}
+
 export function setWithTTL<T>(key: string, data: T): void {
+  if (!isStorageAvailable()) return;
+
   const entry: StorageEntry<T> = {
     data,
     timestamp: Date.now(),
   };
 
-  localStorage.setItem(key, JSON.stringify(entry));
+  window.localStorage.setItem(key, JSON.stringify(entry));
 }
 
 export function getWithTTL<T>(key: string, ttlMs = ONE_DAY_MS): T | null {
-  const raw = localStorage.getItem(key);
+  if (!isStorageAvailable()) return null;
+
+  const raw = window.localStorage.getItem(key);
   if (!raw) return null;
 
   try {
@@ -23,19 +32,20 @@ export function getWithTTL<T>(key: string, ttlMs = ONE_DAY_MS): T | null {
     const isExpired = Date.now() - parsed.timestamp > ttlMs;
 
     if (isExpired) {
-      localStorage.removeItem(key);
+      window.localStorage.removeItem(key);
       return null;
     }
 
     return parsed.data;
   } catch {
-    localStorage.removeItem(key);
+    window.localStorage.removeItem(key);
     return null;
   }
 }
 
 export function removeWithTTL(key: string): void {
-  localStorage.removeItem(key);
+  if (!isStorageAvailable()) return;
+  window.localStorage.removeItem(key);
 }
 
 export { ONE_DAY_MS };
