@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useEnrollmentPeriodContext } from "@/contexts/EnrollmentPeriodContext";
 import { useLicenseContext } from "@/contexts/LicenseContext";
@@ -13,6 +13,8 @@ import { PushNotificationsCard } from "@/components/pwa/PushNotificationsCard";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const justRequested = searchParams.get("requested") === "true";
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriodContext();
   const {
@@ -65,7 +67,7 @@ export default function DashboardPage() {
         <DashboardActions
           licenseLoading={licenseLoading}
           hasLicense={hasLicense}
-          isUnderReview={isUnderReview}
+          isUnderReview={isUnderReview || justRequested}
           isRejected={isRejected}
           isWaitlisted={isWaitlisted}
           hasOpenEnrollmentPeriod={hasOpenPeriod}

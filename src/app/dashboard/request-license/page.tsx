@@ -67,7 +67,7 @@ const Step2Documents = dynamic(
 export default function RequestLicensePage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { isUnderReview, isWaitlisted, loading, licenseRequest } = useLicenseContext();
+  const { isUnderReview, isWaitlisted, loading, licenseRequest, refresh } = useLicenseContext();
   const { loading: periodLoading, hasOpenPeriod, semVagas } = useEnrollmentPeriodContext();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -171,6 +171,7 @@ export default function RequestLicensePage() {
       removeWithTTL(STORAGE_KEY);
       removeWithTTL(STORAGE_KEY_STEP2);
       removeWithTTL(STORAGE_KEY_STEP3);
+      refresh();
       router.push("/dashboard?requested=true");
     } catch (err: unknown) {
       const e = err as { message?: string };

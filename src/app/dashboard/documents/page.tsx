@@ -33,7 +33,6 @@ function DocumentsPageContent() {
   const [images, setImages] = useState<StudentImage[]>([]);
   const [preview, setPreview] = useState<{
     src: string;
-    isPdf: boolean;
     title: string;
   } | null>(null);
   const [showRejectedBanner, setShowRejectedBanner] = useState(true);
@@ -146,8 +145,8 @@ function DocumentsPageContent() {
               <DocumentCard
                 key={image._id}
                 image={image}
-                onPreview={(src, isPdf, title) =>
-                  setPreview({ src, isPdf, title })
+                onPreview={(src, title) =>
+                  setPreview({ src, title })
                 }
               />
             ))}

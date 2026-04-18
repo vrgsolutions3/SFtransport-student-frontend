@@ -11,7 +11,7 @@ import {
 
 interface DocumentCardProps {
   image: StudentImage;
-  onPreview: (src: string, isPdf: boolean, title: string) => void;
+  onPreview: (src: string, title: string) => void;
 }
 
 export function DocumentCard({ image, onPreview }: DocumentCardProps) {
@@ -29,32 +29,23 @@ export function DocumentCard({ image, onPreview }: DocumentCardProps) {
             <span className="text-xs">Arquivo não disponível</span>
           </div>
         ) : isPdf ? (
-          <div className="h-48 px-4 py-3 flex items-center justify-between gap-4 bg-surface-container-low">
-            <div className="min-w-0 flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <FileText size={22} className="text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-on-surface truncate">
-                  {title}
-                </p>
-                <p className="text-xs text-on-surface-variant">
-                  Documento em PDF
-                </p>
-              </div>
+          <div className="h-48 px-4 py-3 flex items-center gap-3 bg-surface-container-low">
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <FileText size={22} className="text-primary" />
             </div>
-            <button
-              type="button"
-              onClick={() => onPreview(src, true, title)}
-              className="h-10 px-4 rounded-lg border border-outline-variant/40 text-sm font-semibold text-on-surface hover:bg-surface-container transition-colors"
-            >
-              Visualizar
-            </button>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-on-surface truncate">
+                {title}
+              </p>
+              <p className="text-xs text-on-surface-variant">
+                Documento em PDF
+              </p>
+            </div>
           </div>
         ) : (
           <button
             type="button"
-            onClick={() => onPreview(src, false, title)}
+            onClick={() => onPreview(src, title)}
             className="w-full h-48 bg-white"
             aria-label={`Visualizar ${title}`}
           >
