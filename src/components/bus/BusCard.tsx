@@ -37,9 +37,9 @@ export function BusCard({ route }: { route: BusRoute }) {
         </div>
       </div>
 
-      {route.universityIds.length > 0 ? (
+      {(route.universityIds ?? []).length > 0 ? (
         <div className="flex flex-col gap-2">
-          {route.universityIds.map((uni) => (
+          {(route.universityIds ?? []).map((uni) => (
             <div
               key={uni._id}
               className="flex items-start gap-2.5 bg-surface-container rounded-xl p-3"

@@ -149,7 +149,6 @@ export default function RequestLicensePage() {
         if (normalized.length > 0) formData.append(key, normalized);
       };
       appendIfFilled("institution", step1.institution);
-      appendIfFilled("universityId", step1.universityId);
       appendIfFilled("degree", step1.degree);
       appendIfFilled("shift", step1.shift);
       appendIfFilled("bloodType", step1.bloodType);
@@ -169,6 +168,20 @@ export default function RequestLicensePage() {
             : (entry?.file?.name ?? fallbackName);
         formData.append(doc.photoType, blob, uploadFileName);
       }
+      // If an university was selected via autocomplete, ensure the student's profile
+      // is associated to the university (backend expects `student.universityId`).
+      if (step1.universityId) {
+        try {
+          await api.patch('/student/me', { universityId: step1.universityId });
+        } catch (err: unknown) {
+          const e = err as { message?: string };
+          setError(e?.message ?? 'Erro ao associar instituição. Tente novamente.');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          setSubmitting(false);
+          return;
+        }
+      }
+
       await api.postForm("/student/me/license-submit", formData);
       removeWithTTL(STORAGE_KEY);
       removeWithTTL(STORAGE_KEY_STEP2);
