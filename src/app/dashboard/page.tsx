@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+// Forçar rendering dinâmico para evitar erro de prerender com hooks de navegação
+export const dynamic = 'force-dynamic';
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useEnrollmentPeriodContext } from "@/contexts/EnrollmentPeriodContext";
 import { useLicenseContext } from "@/contexts/LicenseContext";
@@ -13,8 +16,13 @@ import { PushNotificationsCard } from "@/components/pwa/PushNotificationsCard";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const justRequested = searchParams.get("requested") === "true";
+  const [justRequested, setJustRequested] = useState(false);
+
+  useEffect(() => {
+    // leitura de query params no cliente para evitar hooks de navegação em SSR
+    const params = new URLSearchParams(window.location.search);
+    setJustRequested(params.get("requested") === "true");
+  }, []);
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriodContext();
   const {
@@ -25,6 +33,7 @@ export default function DashboardPage() {
     isRejected,
     isWaitlisted,
     rejectionReason,
+    filaPosition,
   } = useLicenseContext();
 
   useEffect(() => {
@@ -56,9 +65,11 @@ export default function DashboardPage() {
                 <h2 className="font-headline font-bold text-on-tertiary text-sm">
                   Sua solicitação está na fila de espera
                 </h2>
-                <p className="text-on-tertiary text-sm/relaxed">
-                  Sua solicitação está na fila de espera. Você será notificado quando uma vaga for liberada.
-                </p>
+                {typeof filaPosition !== "undefined" && filaPosition !== null ? (
+                  <p className="text-on-tertiary text-sm/relaxed">Posição atual: {filaPosition}</p>
+                ) : (
+                  <p className="text-on-tertiary text-sm/relaxed">Sua solicitação está na fila de espera. Você será notificado quando uma vaga for liberada.</p>
+                )}
               </div>
             </div>
           </section>
@@ -72,6 +83,7 @@ export default function DashboardPage() {
           isWaitlisted={isWaitlisted}
           hasOpenEnrollmentPeriod={hasOpenPeriod}
           rejectionReason={rejectionReason}
+          filaPosition={filaPosition}
           shouldShowDocumentsCard={shouldShowDocumentsCard}
         />
       </main>

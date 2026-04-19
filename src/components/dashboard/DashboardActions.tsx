@@ -13,6 +13,7 @@ interface DashboardActionsProps {
   isWaitlisted: boolean;
   hasOpenEnrollmentPeriod: boolean;
   rejectionReason: string | null;
+  filaPosition?: number | null;
   shouldShowDocumentsCard: boolean;
 }
 
@@ -24,6 +25,7 @@ export function DashboardActions({
   isWaitlisted,
   hasOpenEnrollmentPeriod,
   rejectionReason,
+  filaPosition,
   shouldShowDocumentsCard,
 }: DashboardActionsProps) {
   return (
@@ -36,6 +38,7 @@ export function DashboardActions({
         isWaitlisted={isWaitlisted}
         hasOpenEnrollmentPeriod={hasOpenEnrollmentPeriod}
         rejectionReason={rejectionReason}
+        filaPosition={filaPosition ?? null}
       />
       {shouldShowDocumentsCard && <ActionCard action={DOCUMENTS_ACTION} />}
       {DASHBOARD_ACTIONS.filter(

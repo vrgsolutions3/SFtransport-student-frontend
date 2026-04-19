@@ -25,6 +25,7 @@ interface LicenseActionCardProps {
   isWaitlisted: boolean;
   hasOpenEnrollmentPeriod: boolean;
   rejectionReason: string | null;
+  filaPosition?: number | null;
 }
 
 function LicenseActionCardInner({
@@ -35,6 +36,7 @@ function LicenseActionCardInner({
   isWaitlisted,
   hasOpenEnrollmentPeriod,
   rejectionReason,
+  filaPosition,
 }: LicenseActionCardProps) {
   if (loading) return <Skeleton />;
 
@@ -49,9 +51,13 @@ function LicenseActionCardInner({
           <h3 className="font-headline text-lg font-bold text-on-surface mb-1">
             Na fila de espera
           </h3>
-          <p className="text-sm text-on-surface-variant">
-            Você será notificado quando uma vaga for liberada.
-          </p>
+          {typeof filaPosition !== "undefined" && filaPosition !== null ? (
+            <p className="text-sm text-on-surface-variant">Posição atual: {filaPosition}</p>
+          ) : (
+            <p className="text-sm text-on-surface-variant">
+              Você será notificado quando uma vaga for liberada.
+            </p>
+          )}
         </div>
         <div className="bg-surface-container-high rounded-full p-3 shrink-0 ml-4">
           <ListOrdered className="text-primary w-7 h-7" />

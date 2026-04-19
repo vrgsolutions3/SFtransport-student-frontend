@@ -8,6 +8,9 @@ export const step1DataSchema = z.object({
     .string({ error: "Instituicao de ensino e obrigatoria" })
     .trim()
     .min(1, "Instituicao de ensino e obrigatoria"),
+  universityId: z
+    .string()
+    .min(1, "Selecione uma instituicao valida da lista."),
   degree: z
     .string({ error: "Curso e obrigatorio" })
     .trim()

@@ -43,6 +43,7 @@ const EMPTY_STEP1: Step1Data = {
   degree: "",
   shift: "",
   bloodType: "",
+  universityId: "",
 };
 const EMPTY_STEP3: Step3Data = { selections: [] };
 
@@ -99,7 +100,7 @@ export default function RequestLicensePage() {
     }
 
     const savedStep1 = getWithTTL<Step1Data>(STORAGE_KEY, ONE_DAY_MS);
-    if (savedStep1) setStep1(savedStep1);
+    if (savedStep1) setStep1((prev) => ({ ...EMPTY_STEP1, ...savedStep1 }));
 
     const savedStep3 = getWithTTL<Step3Data>(STORAGE_KEY_STEP3, ONE_DAY_MS);
     if (savedStep3) setStep3(savedStep3);
@@ -148,6 +149,7 @@ export default function RequestLicensePage() {
         if (normalized.length > 0) formData.append(key, normalized);
       };
       appendIfFilled("institution", step1.institution);
+      appendIfFilled("universityId", step1.universityId);
       appendIfFilled("degree", step1.degree);
       appendIfFilled("shift", step1.shift);
       appendIfFilled("bloodType", step1.bloodType);

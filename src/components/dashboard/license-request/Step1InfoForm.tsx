@@ -15,6 +15,7 @@ export interface Step1Data {
   degree: string;
   shift: string;
   bloodType: string;
+  universityId: string;
 }
 
 interface Step1InfoFormProps {
@@ -61,6 +62,8 @@ export default function Step1InfoForm({
     loadingUniversities,
     loadingCourses,
     loadError,
+    selectedUniversityId,
+    selectedCourseId,
   } = useInstitutionAutocomplete(data.institution, data.degree);
 
   const updateFormData = (updates: Partial<Step1Data>) => {
@@ -72,6 +75,25 @@ export default function Step1InfoForm({
       setErrors((prev) => ({ ...prev, [fieldName]: undefined }));
     }
   };
+
+  // Keep universityId / course id in sync with selected options from autocomplete
+  useEffect(() => {
+    if (selectedUniversityId) {
+      if (data.universityId !== selectedUniversityId) {
+        updateFormData({ universityId: selectedUniversityId });
+      }
+    } else if (data.universityId) {
+      updateFormData({ universityId: "" });
+    }
+  }, [selectedUniversityId]);
+
+  useEffect(() => {
+    if (selectedCourseId) return; // we only track course name in the form
+    // if course was cleared, keep degree in sync
+    if (!isCourseSelected && data.degree) {
+      updateFormData({ degree: "" });
+    }
+  }, [selectedCourseId, isCourseSelected]);
 
   const onInstitutionChange = (newInstitution: string) => {
     handleInstitutionChange(newInstitution);
