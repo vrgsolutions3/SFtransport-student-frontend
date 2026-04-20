@@ -12,5 +12,6 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     globals: false,
     css: true,
+    threads: false,
   },
 });

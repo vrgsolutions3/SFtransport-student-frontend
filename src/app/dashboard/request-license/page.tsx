@@ -69,7 +69,7 @@ export default function RequestLicensePage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { isUnderReview, isWaitlisted, loading, licenseRequest, refresh } = useLicenseContext();
-  const { loading: periodLoading, hasOpenPeriod, semVagas } = useEnrollmentPeriodContext();
+  const { loading: periodLoading, hasOpenPeriod } = useEnrollmentPeriodContext();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [step1, setStep1] = useState<Step1Data>(EMPTY_STEP1);
@@ -304,7 +304,6 @@ export default function RequestLicensePage() {
         degree={step1.degree}
         shift={step1.shift}
         totalPeriods={step3.selections.length}
-        semVagas={semVagas}
       />
     </div>
   );
