@@ -1,59 +1,58 @@
 import { Bus, MapPin, Users } from "lucide-react";
 
-interface University {
-  _id: string;
+interface BusRouteDestination {
   name: string;
-  acronym: string;
-  address: string;
+  active: boolean;
 }
 
 export interface BusRoute {
   _id: string;
-  identifier: string;
-  capacity: number;
-  universityIds: University[];
+  lineNumber: string;
+  destinations: BusRouteDestination[];
+  active: boolean;
 }
 
 export function BusCard({ route }: { route: BusRoute }) {
+  const activeDestinations = (route.destinations ?? []).filter((destination) => destination.active);
+
   return (
     <div
       className="rounded-2xl bg-surface-container-low border border-outline-variant/30 p-5"
       style={{ boxShadow: "var(--shadow-card)" }}
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-3">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <Bus className="w-4 h-4 text-primary" />
           </div>
-          <span className="font-headline font-bold text-on-surface text-base">
-            {route.identifier}
-          </span>
+          <div>
+            <span className="font-headline font-bold text-on-surface text-base block">
+              {route.lineNumber}
+            </span>
+            <span className="text-xs text-on-surface-variant">
+              {route.active ? "Rota ativa" : "Rota inativa"}
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-1.5 bg-surface-container-high rounded-full px-3 py-1">
           <Users className="w-3.5 h-3.5 text-on-surface-variant" />
           <span className="text-xs text-on-surface-variant font-medium">
-            {route.capacity} lugares
+            {activeDestinations.length} destinos ativos
           </span>
         </div>
       </div>
 
-      {(route.universityIds ?? []).length > 0 ? (
+      {activeDestinations.length > 0 ? (
         <div className="flex flex-col gap-2">
-          {(route.universityIds ?? []).map((uni) => (
+          {activeDestinations.map((destination) => (
             <div
-              key={uni._id}
+              key={destination.name}
               className="flex items-start gap-2.5 bg-surface-container rounded-xl p-3"
             >
               <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-on-surface leading-tight">
-                  {uni.name}
-                  <span className="ml-1.5 text-xs font-normal text-on-surface-variant">
-                    ({uni.acronym})
-                  </span>
-                </p>
-                <p className="text-xs text-on-surface-variant mt-0.5">
-                  {uni.address}
+                  {destination.name}
                 </p>
               </div>
             </div>
@@ -61,7 +60,7 @@ export function BusCard({ route }: { route: BusRoute }) {
         </div>
       ) : (
         <p className="text-xs text-on-surface-variant italic">
-          Nenhuma instituição vinculada.
+          Nenhum destino ativo vinculado.
         </p>
       )}
     </div>

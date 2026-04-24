@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { ArrowLeft, FileCheck, RefreshCw, ShieldCheck, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import DocumentUpload from "./DocumentUpload";
@@ -9,6 +9,7 @@ import { useNSFW } from "@/hooks/useNSFW";
 import { useImageProcessor } from "@/hooks/useImageProcessor";
 import { cn } from "@/lib/utils";
 import type { ImageEntry } from "@/hooks/useImageProcessor";
+import { api } from "@/lib/api";
 
 // ─── Tipos públicos ───────────────────────────────────────────
 
@@ -105,8 +106,19 @@ export default function Step2Documents({
   const nsfw = useNSFW();
   const model = nsfw.status === "ready" ? nsfw.model : null;
 
+  const [isInitialEnrollmentRequired, setIsInitialEnrollmentRequired] = useState<boolean | null>(null);
+
+  // Determine which documents should be visible for this user.
+  // The canonical list lives in LICENSE_DOCUMENTS; we compute a filtered
+  // `visibleDocs` array based on whether the student needs initial enrollment docs.
+  const visibleDocs = ((): typeof LICENSE_DOCUMENTS => {
+    if (isInitialEnrollmentRequired === null) return LICENSE_DOCUMENTS.filter((d) => d.photoType !== "GovernmentId" && d.photoType !== "ProofOfResidence");
+    if (isInitialEnrollmentRequired) return LICENSE_DOCUMENTS;
+    return LICENSE_DOCUMENTS.filter((d) => d.photoType !== "GovernmentId" && d.photoType !== "ProofOfResidence");
+  })();
+
   const { entries: processorEntries, isProcessing, allValid, setFile, removeEntry } =
-    useImageProcessor(model, LICENSE_DOCUMENTS.length);
+    useImageProcessor(model, visibleDocs.length);
 
   const restoredRef = useRef(false);
 
@@ -118,22 +130,45 @@ export default function Step2Documents({
       const restoredEntry = entries[doc.photoType];
       if (!restoredEntry?.file) continue;
 
-      setFile(index, restoredEntry.file, doc.validateRatio);
-      hasRestoredFile = true;
+      // Only attempt to restore into processor if this doc is visible
+      const visibleIndex = visibleDocs.findIndex((v) => v.photoType === doc.photoType);
+      if (visibleIndex >= 0) {
+        setFile(visibleIndex, restoredEntry.file, doc.validateRatio);
+        hasRestoredFile = true;
+      }
     }
 
     if (hasRestoredFile) {
       restoredRef.current = true;
     }
-  }, [entries, setFile]);
+  }, [entries, setFile, visibleDocs]);
 
-  // Sincroniza entradas para o pai
+  // Fetch student profile to determine if initial enrollment documents are required
+  useEffect(() => {
+    let mounted = true;
+    api.get("/student/me").then((student: any) => {
+      if (!mounted) return;
+      const needsInitial = student ? !Boolean(student.hasCompletedInitialEnrollment) : false;
+      setIsInitialEnrollmentRequired(needsInitial);
+    }).catch(() => {
+      if (!mounted) return;
+      setIsInitialEnrollmentRequired(false);
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  // Sincroniza entradas para o pai — mapeando corretamente entre LICENSE_DOCUMENTS
+  // (chaves persistentes) e a ordem/processador atual (`visibleDocs`).
   useEffect(() => {
     const mapped: DocumentEntries = Object.fromEntries(
-      LICENSE_DOCUMENTS.map((doc, i) => [doc.photoType, processorEntries[i] ?? null])
+      LICENSE_DOCUMENTS.map((doc) => {
+        const visibleIndex = visibleDocs.findIndex((v) => v.photoType === doc.photoType);
+        const entry = visibleIndex >= 0 ? processorEntries[visibleIndex] ?? null : null;
+        return [doc.photoType, entry];
+      }),
     );
     onChange(mapped);
-  }, [processorEntries, onChange]);
+  }, [processorEntries, onChange, visibleDocs]);
 
   const handleFileSelect = useCallback(
     (index: number, file: File, validateRatio: boolean) => {
@@ -143,7 +178,7 @@ export default function Step2Documents({
   );
 
   const okCount = processorEntries.filter((e) => e?.result?.status === "ok").length;
-  const total = LICENSE_DOCUMENTS.length;
+  const total = visibleDocs.length;
 
   return (
     <div className="space-y-5 pb-28">
@@ -155,10 +190,10 @@ export default function Step2Documents({
 
       {/* Lista de documentos */}
       <div className="space-y-3">
-        {LICENSE_DOCUMENTS.map((doc, index) => (
+        {visibleDocs.map((doc, index) => (
           <DocumentUpload
             key={doc.photoType}
-            config={doc}
+            config={{ ...doc, required: (doc.photoType === "GovernmentId" || doc.photoType === "ProofOfResidence") && Boolean(isInitialEnrollmentRequired) ? true : doc.required }}
             entry={processorEntries[index] ?? null}
             onFileSelect={(file) => handleFileSelect(index, file, doc.validateRatio)}
             onRemove={() => removeEntry(index)}

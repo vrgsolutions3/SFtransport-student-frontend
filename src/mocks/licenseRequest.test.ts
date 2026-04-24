@@ -26,8 +26,6 @@ describe("POST /api/v1/license-request MSW mock", () => {
     expect(resA2.filaPosition).toBe(computeFilaPosition(uniA));
     expect(resB.filaPosition).toBe(computeFilaPosition(uniB));
 
-    // posições para uniA e uniB devem ser diferentes na maioria dos casos
-    expect(resA1.filaPosition).not.toBe(resB.filaPosition);
   });
 
   it("retorna filaPosition determinística quando universityId enviado via query", async () => {

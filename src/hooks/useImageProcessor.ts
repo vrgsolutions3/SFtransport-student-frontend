@@ -112,6 +112,20 @@ export function useImageProcessor(model: NSFWModel | null, slotsCount: number): 
   );
   const [processingCount, setProcessingCount] = useState(0);
 
+  // Keep entries array length in sync if slotsCount changes dynamically.
+  useEffect(() => {
+    setEntries((prev) => {
+      if (prev.length === slotsCount) return prev;
+      const next = [...prev];
+      if (next.length < slotsCount) {
+        next.push(...new Array(slotsCount - next.length).fill(null));
+      } else {
+        next.splice(slotsCount);
+      }
+      return next;
+    });
+  }, [slotsCount]);
+
   useEffect(() => {
     return () => {
       setEntries((prev) => {

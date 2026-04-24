@@ -4,8 +4,8 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="w-full py-8 px-8 bg-surface-container-low">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+    <footer className="-mx-8 w-[calc(100%+4rem)] bg-surface-container-low border-t border-outline-variant/20">
+      <div className="w-full px-8 py-8 flex flex-col md:flex-row justify-between items-center gap-6">
         
         {/* Lado Esquerdo */}
         <div className="flex items-center gap-4">

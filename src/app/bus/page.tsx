@@ -15,7 +15,7 @@ export default function BusRoutesPage() {
   useEffect(() => {
     const controller = new AbortController();
 
-    fetch("/api/v1/bus", { signal: controller.signal })
+    fetch("/api/v1/bus-route", { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error();
         return res.json();

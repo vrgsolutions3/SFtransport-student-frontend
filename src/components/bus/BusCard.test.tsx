@@ -2,66 +2,70 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { BusCard, type BusRoute } from "./BusCard";
 
-const makeUniversity = (overrides: Partial<{ _id: string; name: string; acronym: string; address: string }> = {}) => ({
-  _id: "uni-1",
-  name: "Instituto Federal do Rio de Janeiro",
-  acronym: "IFRJ",
-  address: "Rua Lúcio Tavares, 1045 - Nilópolis",
-  ...overrides,
-});
-
 const baseRoute: BusRoute = {
   _id: "bus-1",
-  identifier: "VRG-01",
-  capacity: 40,
-  universityIds: [],
+  lineNumber: "VRG-01",
+  destinations: [],
+  active: true,
 };
 
 describe("BusCard", () => {
-  it("exibe o identificador da rota", () => {
+  it("exibe o numero da rota", () => {
     render(<BusCard route={baseRoute} />);
     expect(screen.getByText("VRG-01")).toBeInTheDocument();
   });
 
-  it("exibe a capacidade de passageiros", () => {
+  it("exibe o status da rota", () => {
     render(<BusCard route={baseRoute} />);
-    expect(screen.getByText(/40 lugares/i)).toBeInTheDocument();
+    expect(screen.getByText(/rota ativa/i)).toBeInTheDocument();
   });
 
-  it("exibe mensagem quando nao ha universidades vinculadas", () => {
+  it("exibe mensagem quando nao ha destinos ativos", () => {
     render(<BusCard route={baseRoute} />);
-    expect(screen.getByText(/nenhuma instituição vinculada/i)).toBeInTheDocument();
+    expect(screen.getByText(/nenhum destino ativo vinculado/i)).toBeInTheDocument();
   });
 
-  it("nao exibe mensagem de sem vinculo quando ha universidades", () => {
-    render(<BusCard route={{ ...baseRoute, universityIds: [makeUniversity()] }} />);
-    expect(screen.queryByText(/nenhuma instituição vinculada/i)).not.toBeInTheDocument();
+  it("nao exibe mensagem de sem vinculo quando ha destinos ativos", () => {
+    render(
+      <BusCard
+        route={{
+          ...baseRoute,
+          destinations: [{ name: "Campus Centro", active: true }],
+        }}
+      />,
+    );
+    expect(screen.queryByText(/nenhum destino ativo vinculado/i)).not.toBeInTheDocument();
   });
 
-  it("exibe nome e sigla da universidade vinculada", () => {
-    render(<BusCard route={{ ...baseRoute, universityIds: [makeUniversity()] }} />);
-    expect(screen.getByText(/Instituto Federal do Rio de Janeiro/i)).toBeInTheDocument();
-    expect(screen.getByText(/IFRJ/i)).toBeInTheDocument();
+  it("exibe os destinos ativos", () => {
+    render(
+      <BusCard
+        route={{
+          ...baseRoute,
+          destinations: [
+            { name: "Campus Centro", active: true },
+            { name: "Terminal Rodoviário", active: true },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText(/Campus Centro/i)).toBeInTheDocument();
+    expect(screen.getByText(/Terminal Rodoviário/i)).toBeInTheDocument();
   });
 
-  it("exibe endereco da universidade", () => {
-    render(<BusCard route={{ ...baseRoute, universityIds: [makeUniversity()] }} />);
-    expect(screen.getByText(/Nilópolis/i)).toBeInTheDocument();
-  });
-
-  it("exibe multiplas universidades vinculadas", () => {
-    const universities = [
-      makeUniversity(),
-      makeUniversity({ _id: "uni-2", name: "Universidade do Estado do Rio de Janeiro", acronym: "UERJ", address: "Rua São Francisco Xavier" }),
-    ];
-    render(<BusCard route={{ ...baseRoute, universityIds: universities }} />);
-    expect(screen.getByText(/Instituto Federal/i)).toBeInTheDocument();
-    expect(screen.getByText(/Universidade do Estado do Rio de Janeiro/i)).toBeInTheDocument();
-    expect(screen.getByText(/UERJ/i)).toBeInTheDocument();
-  });
-
-  it("renderiza rota com capacidade zero sem erros", () => {
-    render(<BusCard route={{ ...baseRoute, capacity: 0 }} />);
-    expect(screen.getByText(/0 lugares/i)).toBeInTheDocument();
+  it("exibe somente destinos ativos", () => {
+    render(
+      <BusCard
+        route={{
+          ...baseRoute,
+          destinations: [
+            { name: "Campus Centro", active: true },
+            { name: "Destino Inativo", active: false },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText(/Campus Centro/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Destino Inativo/i)).not.toBeInTheDocument();
   });
 });

@@ -40,4 +40,22 @@ export const LICENSE_DOCUMENTS: DocumentConfig[] = [
     validateRatio: false,
     acceptPdf: true,
   },
+  {
+    photoType: "GovernmentId",
+    label: "Documento de Identidade",
+    description: "RG, CNH ou documento oficial (JPEG/PNG/PDF)",
+    icon: FileText,
+    required: false,
+    validateRatio: false,
+    acceptPdf: true,
+  },
+  {
+    photoType: "ProofOfResidence",
+    label: "Comprovante de Residência",
+    description: "Conta/declaração de residência (JPEG/PNG/PDF)",
+    icon: FileText,
+    required: false,
+    validateRatio: false,
+    acceptPdf: true,
+  },
 ];
