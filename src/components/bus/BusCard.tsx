@@ -1,4 +1,4 @@
-import { Bus, MapPin, Users } from "lucide-react";
+import { Bus } from "lucide-react";
 
 interface BusRouteDestination {
   name: string;
@@ -9,11 +9,11 @@ export interface BusRoute {
   _id: string;
   lineNumber: string;
   destinations: BusRouteDestination[];
-  active: boolean;
+  active?: boolean;
 }
 
 export function BusCard({ route }: { route: BusRoute }) {
-  const activeDestinations = (route.destinations ?? []).filter((destination) => destination.active);
+  const acronyms = (route.destinations ?? []).map((d) => d.name).filter(Boolean);
 
   return (
     <div
@@ -29,40 +29,13 @@ export function BusCard({ route }: { route: BusRoute }) {
             <span className="font-headline font-bold text-on-surface text-base block">
               {route.lineNumber}
             </span>
-            <span className="text-xs text-on-surface-variant">
-              {route.active ? "Rota ativa" : "Rota inativa"}
-            </span>
           </div>
-        </div>
-        <div className="flex items-center gap-1.5 bg-surface-container-high rounded-full px-3 py-1">
-          <Users className="w-3.5 h-3.5 text-on-surface-variant" />
-          <span className="text-xs text-on-surface-variant font-medium">
-            {activeDestinations.length} destinos ativos
-          </span>
         </div>
       </div>
 
-      {activeDestinations.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          {activeDestinations.map((destination) => (
-            <div
-              key={destination.name}
-              className="flex items-start gap-2.5 bg-surface-container rounded-xl p-3"
-            >
-              <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-on-surface leading-tight">
-                  {destination.name}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-xs text-on-surface-variant italic">
-          Nenhum destino ativo vinculado.
-        </p>
-      )}
+      {acronyms.length > 0 ? (
+        <p className="text-sm text-on-surface-variant">{acronyms.join(', ')}</p>
+      ) : null}
     </div>
   );
 }

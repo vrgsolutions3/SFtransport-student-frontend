@@ -15,57 +15,24 @@ describe("BusCard", () => {
     expect(screen.getByText("VRG-01")).toBeInTheDocument();
   });
 
-  it("exibe o status da rota", () => {
+  it("nao exibe status nem contagem antiga", () => {
     render(<BusCard route={baseRoute} />);
-    expect(screen.getByText(/rota ativa/i)).toBeInTheDocument();
+    expect(screen.queryByText(/rota ativa/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/destinos ativos/i)).not.toBeInTheDocument();
   });
 
-  it("exibe mensagem quando nao ha destinos ativos", () => {
-    render(<BusCard route={baseRoute} />);
-    expect(screen.getByText(/nenhum destino ativo vinculado/i)).toBeInTheDocument();
-  });
-
-  it("nao exibe mensagem de sem vinculo quando ha destinos ativos", () => {
-    render(
-      <BusCard
-        route={{
-          ...baseRoute,
-          destinations: [{ name: "Campus Centro", active: true }],
-        }}
-      />,
-    );
-    expect(screen.queryByText(/nenhum destino ativo vinculado/i)).not.toBeInTheDocument();
-  });
-
-  it("exibe os destinos ativos", () => {
+  it("exibe as siglas das faculdades quando existem destinos", () => {
     render(
       <BusCard
         route={{
           ...baseRoute,
           destinations: [
-            { name: "Campus Centro", active: true },
-            { name: "Terminal Rodoviário", active: true },
+            { name: "IFF", active: true },
+            { name: "IFB", active: true },
           ],
         }}
       />,
     );
-    expect(screen.getByText(/Campus Centro/i)).toBeInTheDocument();
-    expect(screen.getByText(/Terminal Rodoviário/i)).toBeInTheDocument();
-  });
-
-  it("exibe somente destinos ativos", () => {
-    render(
-      <BusCard
-        route={{
-          ...baseRoute,
-          destinations: [
-            { name: "Campus Centro", active: true },
-            { name: "Destino Inativo", active: false },
-          ],
-        }}
-      />,
-    );
-    expect(screen.getByText(/Campus Centro/i)).toBeInTheDocument();
-    expect(screen.queryByText(/Destino Inativo/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/IFF, IFB/i)).toBeInTheDocument();
   });
 });

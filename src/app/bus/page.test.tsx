@@ -53,7 +53,7 @@ describe("BusRoutesPage", () => {
     render(<BusRoutesPage />);
 
     await waitFor(() => expect(screen.queryByTestId("skeleton")).not.toBeInTheDocument());
-    expect(fetchMock).toHaveBeenCalledWith("/api/v1/bus-route", expect.any(Object));
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/bus", expect.any(Object));
     expect(screen.getAllByTestId("bus-card")).toHaveLength(2);
     expect(screen.getByText("VRG-01")).toBeInTheDocument();
     expect(screen.getByText("VRG-02")).toBeInTheDocument();

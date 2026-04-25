@@ -15,12 +15,42 @@ export default function BusRoutesPage() {
   useEffect(() => {
     const controller = new AbortController();
 
-    fetch("/api/v1/bus-route", { signal: controller.signal })
+    fetch("/api/v1/bus", { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error();
         return res.json();
       })
-      .then((data) => setRoutes(data))
+      .then((data) => {
+        const mapped: BusRoute[] = (Array.isArray(data) ? data : []).map((item: any) => {
+          // If already a BusRoute shape, return as-is
+          if (item && item.lineNumber) return item as BusRoute;
+
+          const identifier = item?.identifier ?? item?.lineNumber ?? "";
+          const id = item?._id ?? "";
+
+          let destinations: { name: string; active: boolean }[] = [];
+
+          if (Array.isArray(item?.destinations)) {
+            destinations = item.destinations.map((d: any) => ({ name: d.name ?? (d.universityName ?? identifier), active: d.active ?? true }));
+          } else if (Array.isArray(item?.universitySlots)) {
+            destinations = item.universitySlots.map((s: any) => ({
+              name: s.universityName ?? (typeof s.universityId === 'string' ? s.universityId : (s.universityId?.toString?.() ?? identifier)),
+              active: true,
+            }));
+          }
+
+          if (destinations.length === 0) destinations.push({ name: identifier, active: true });
+
+          return {
+            _id: id,
+            lineNumber: identifier,
+            destinations,
+            active: item?.active ?? true,
+          } as BusRoute;
+        });
+
+        setRoutes(mapped);
+      })
       .catch((err) => {
         if (err.name !== "AbortError") setError(true);
       })
