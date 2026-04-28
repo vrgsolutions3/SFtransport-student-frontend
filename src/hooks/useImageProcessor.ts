@@ -54,10 +54,22 @@ async function runPipeline(
 
   // PDFs passam direto — sem análise de imagem
   if (file.type === "application/pdf") {
+    if (validateRatio) {
+      return { status: "error", processedBlob: null, nsfw: null, aspectRatio: null, faceHeuristic: null, message: "PDF não é permitido para este documento." };
+    }
+    return { status: "ok", processedBlob: file, nsfw: null, aspectRatio: null, faceHeuristic: null, message: "" };
+  }
+  // If this document does NOT require 3x4 validation, skip heavy processing
+  // and NSFW checks: we only need to ensure it's an image and accept it.
+  if (!validateRatio) {
+    // quick sanity: only accept image mime types here
+    if (!file.type || !file.type.startsWith('image/')) {
+      return { status: "error", processedBlob: null, nsfw: null, aspectRatio: null, faceHeuristic: null, message: "Arquivo inválido: deve ser uma imagem." };
+    }
     return { status: "ok", processedBlob: file, nsfw: null, aspectRatio: null, faceHeuristic: null, message: "" };
   }
 
-  // 1. Pré-processamento
+  // 1. Pré-processamento (somente para documentos que validam proporção)
   const targetSize = getTargetSize();
   let preprocessed: Awaited<ReturnType<typeof preprocessImage>>;
   try {
@@ -68,16 +80,11 @@ async function runPipeline(
 
   const { blob, canvas, width, height } = preprocessed;
 
-  // 2. Proporção 3x4 e rosto — só para ProfilePhoto
-  const aspectRatio = validateRatio
-    ? validate3x4Ratio(width, height)
-    : { valid: true, ratio: width / height, message: "" };
+  // 2. Proporção 3x4 e rosto — apenas para ProfilePhoto (validateRatio === true)
+  const aspectRatio = validate3x4Ratio(width, height);
+  const faceHeuristic = analyzeFaceHeuristic(canvas);
 
-  const faceHeuristic = validateRatio
-    ? analyzeFaceHeuristic(canvas)
-    : { likelyCentered: true, message: "" };
-
-  // 3. NSFW — roda em todas as imagens
+  // 3. NSFW — apenas para documentos que validam proporção
   let nsfw: ImageValidationResult["nsfw"] = null;
   let nsfwMessage = "";
 

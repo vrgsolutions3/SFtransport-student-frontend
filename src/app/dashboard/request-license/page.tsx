@@ -100,7 +100,7 @@ export default function RequestLicensePage() {
     }
 
     const savedStep1 = getWithTTL<Step1Data>(STORAGE_KEY, ONE_DAY_MS);
-    if (savedStep1) setStep1((prev) => ({ ...EMPTY_STEP1, ...savedStep1 }));
+    if (savedStep1) setStep1({ ...EMPTY_STEP1, ...savedStep1 });
 
     const savedStep3 = getWithTTL<Step3Data>(STORAGE_KEY_STEP3, ONE_DAY_MS);
     if (savedStep3) setStep3(savedStep3);
@@ -157,15 +157,30 @@ export default function RequestLicensePage() {
         const entry = documentEntries[doc.photoType];
         const blob = entry?.result?.processedBlob ?? entry?.file;
         if (!blob) continue;
+        // Client-side guard: documents that don't accept PDF must be images (JPEG/JPG/PNG)
+        if (!doc.acceptPdf) {
+          if (!blob.type || !["image/jpeg", "image/jpg", "image/png"].includes(blob.type)) {
+            const label = doc.label || "Arquivo";
+            setError(`${label} inválido: envie um arquivo JPEG, JPG ou PNG.`);
+            setSubmitting(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+          }
+        }
         const fallbackName =
-          blob.type === "image/jpeg"
+          blob.type === "image/jpeg" || blob.type === "image/jpg"
             ? `${doc.photoType}.jpg`
-            : `${doc.photoType}.pdf`;
-        const uploadFileName =
-          blob.type === "image/jpeg"
-            ? (entry?.file?.name?.replace(/\.[^.]+$/, "") || doc.photoType) +
-              ".jpg"
-            : (entry?.file?.name ?? fallbackName);
+            : blob.type === "image/png"
+            ? `${doc.photoType}.png`
+            : `${doc.photoType}.bin`;
+        const uploadFileName = (() => {
+          const original = entry?.file?.name;
+          if (!original) return fallbackName;
+          const base = original.replace(/\.[^.]+$/, "");
+          if (blob.type === "image/jpeg" || blob.type === "image/jpg") return `${base}.jpg`;
+          if (blob.type === "image/png") return `${base}.png`;
+          return original;
+        })();
         formData.append(doc.photoType, blob, uploadFileName);
       }
       // If an university was selected via autocomplete, ensure the student's profile

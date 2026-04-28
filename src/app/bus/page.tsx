@@ -21,33 +21,74 @@ export default function BusRoutesPage() {
         return res.json();
       })
       .then((data) => {
-        const mapped: BusRoute[] = (Array.isArray(data) ? data : []).map((item: any) => {
-          // If already a BusRoute shape, return as-is
-          if (item && item.lineNumber) return item as BusRoute;
+        const mapped: BusRoute[] = (Array.isArray(data) ? data : []).map(
+          (item: any) => {
+            // If already a BusRoute shape, normalize and return
+            if (item && item.lineNumber) {
+              const normalizedPeriod =
+                item.period ??
+                item.shift ??
+                item.turno ??
+                item.periodo ??
+                item.schedule?.period ??
+                (item.startTime && item.endTime
+                  ? `${item.startTime} - ${item.endTime}`
+                  : item.start_time && item.end_time
+                    ? `${item.start_time} - ${item.end_time}`
+                    : undefined);
 
-          const identifier = item?.identifier ?? item?.lineNumber ?? "";
-          const id = item?._id ?? "";
+              return {
+                ...(item as BusRoute),
+                period: normalizedPeriod,
+              } as BusRoute;
+            }
 
-          let destinations: { name: string; active: boolean }[] = [];
+            const identifier = item?.identifier ?? item?.lineNumber ?? "";
+            const id = item?._id ?? "";
 
-          if (Array.isArray(item?.destinations)) {
-            destinations = item.destinations.map((d: any) => ({ name: d.name ?? (d.universityName ?? identifier), active: d.active ?? true }));
-          } else if (Array.isArray(item?.universitySlots)) {
-            destinations = item.universitySlots.map((s: any) => ({
-              name: s.universityName ?? (typeof s.universityId === 'string' ? s.universityId : (s.universityId?.toString?.() ?? identifier)),
-              active: true,
-            }));
-          }
+            // derive period from common API shapes
+            const period =
+              item?.period ??
+              item?.shift ??
+              item?.turno ??
+              item?.periodo ??
+              item?.schedule?.period ??
+              (item?.startTime && item?.endTime
+                ? `${item.startTime} - ${item.endTime}`
+                : item?.start_time && item?.end_time
+                  ? `${item.start_time} - ${item.end_time}`
+                  : undefined);
 
-          if (destinations.length === 0) destinations.push({ name: identifier, active: true });
+            let destinations: { name: string; active: boolean }[] = [];
 
-          return {
-            _id: id,
-            lineNumber: identifier,
-            destinations,
-            active: item?.active ?? true,
-          } as BusRoute;
-        });
+            if (Array.isArray(item?.destinations)) {
+              destinations = item.destinations.map((d: any) => ({
+                name: d.name ?? d.universityName ?? identifier,
+                active: d.active ?? true,
+              }));
+            } else if (Array.isArray(item?.universitySlots)) {
+              destinations = item.universitySlots.map((s: any) => ({
+                name:
+                  s.universityName ??
+                  (typeof s.universityId === "string"
+                    ? s.universityId
+                    : (s.universityId?.toString?.() ?? identifier)),
+                active: true,
+              }));
+            }
+
+            if (destinations.length === 0)
+              destinations.push({ name: identifier, active: true });
+
+            return {
+              _id: id,
+              lineNumber: identifier,
+              destinations,
+              active: item?.active ?? true,
+              period,
+            } as BusRoute;
+          },
+        );
 
         setRoutes(mapped);
       })
