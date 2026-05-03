@@ -33,6 +33,8 @@ interface UseInstitutionAutocompleteReturn {
   loadError: string;
   institution: string;
   course: string;
+  selectedUniversityId: string | null;
+  selectedCourseId: string | null;
 }
 
 export function useInstitutionAutocomplete(
@@ -115,6 +117,7 @@ export function useInstitutionAutocomplete(
     );
   }, [normalizedInstitutionInput, universities]);
 
+
   useEffect(() => {
     let cancelled = false;
 
@@ -173,6 +176,10 @@ export function useInstitutionAutocomplete(
   const isInstitutionSelected = Boolean(selectedUniversity);
 
   const normalizedCourseInput = effectiveCourse.trim().toLowerCase();
+  const selectedCourse = useMemo(() => {
+    if (!normalizedCourseInput) return null;
+    return courses.find((c) => c.name.trim().toLowerCase() === normalizedCourseInput) ?? null;
+  }, [normalizedCourseInput, courses]);
   const isCourseSelected =
     normalizedCourseInput.length > 0 &&
     courseOptions.some((option) => option.trim().toLowerCase() === normalizedCourseInput);
@@ -240,5 +247,7 @@ export function useInstitutionAutocomplete(
     loadError,
     institution: effectiveInstitution,
     course: effectiveCourse,
+    selectedUniversityId: selectedUniversity?._id ?? null,
+    selectedCourseId: selectedCourse?._id ?? null,
   };
 }

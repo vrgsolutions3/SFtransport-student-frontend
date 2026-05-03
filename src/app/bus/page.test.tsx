@@ -15,16 +15,16 @@ vi.mock("@/components/bus/BusError", () => ({
   BusError: () => <div data-testid="error">Erro ao carregar rotas</div>,
 }));
 vi.mock("@/components/bus/BusCard", () => ({
-  BusCard: ({ route }: { route: { identifier: string } }) => (
-    <div data-testid="bus-card">{route.identifier}</div>
+  BusCard: ({ route }: { route: { lineNumber: string } }) => (
+    <div data-testid="bus-card">{route.lineNumber}</div>
   ),
 }));
 
-const makeRoute = (id: string, identifier: string) => ({
+const makeRoute = (id: string, lineNumber: string) => ({
   _id: id,
-  identifier,
-  capacity: 40,
-  universityIds: [],
+  lineNumber,
+  destinations: [],
+  active: true,
 });
 
 describe("BusRoutesPage", () => {
@@ -41,17 +41,19 @@ describe("BusRoutesPage", () => {
   });
 
   it("exibe lista de rotas quando fetch retorna dados", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve([makeRoute("1", "VRG-01"), makeRoute("2", "VRG-02")]),
+    });
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve([makeRoute("1", "VRG-01"), makeRoute("2", "VRG-02")]),
-      }),
+      fetchMock,
     );
 
     render(<BusRoutesPage />);
 
     await waitFor(() => expect(screen.queryByTestId("skeleton")).not.toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/bus", expect.any(Object));
     expect(screen.getAllByTestId("bus-card")).toHaveLength(2);
     expect(screen.getByText("VRG-01")).toBeInTheDocument();
     expect(screen.getByText("VRG-02")).toBeInTheDocument();
