@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
     licenseRequest: null as { type: string; status: string } | null,
     refresh: vi.fn(),
   },
-  periodState: { loading: false, hasOpenPeriod: true, semVagas: false },
+  periodState: { loading: false, hasOpenPeriod: true },
 }));
 
 vi.mock("next/navigation", () => ({
@@ -114,7 +114,7 @@ describe("RequestLicensePage", () => {
       licenseRequest: null,
       refresh: vi.fn(),
     };
-    mocks.periodState = { loading: false, hasOpenPeriod: true, semVagas: false };
+    mocks.periodState = { loading: false, hasOpenPeriod: true };
   });
 
   describe("guards de autenticacao", () => {
@@ -197,7 +197,7 @@ describe("RequestLicensePage", () => {
     });
 
     it("exibe skeleton quando period loading=true", () => {
-      mocks.periodState = { loading: true, hasOpenPeriod: true, semVagas: false };
+      mocks.periodState = { loading: true, hasOpenPeriod: true };
       render(<RequestLicensePage />);
 
       expect(screen.getByTestId("request-license-skeleton")).toBeInTheDocument();
@@ -206,14 +206,14 @@ describe("RequestLicensePage", () => {
 
   describe("estado de periodo fechado", () => {
     it("exibe 'Inscricoes encerradas' quando hasOpenPeriod=false", () => {
-      mocks.periodState = { loading: false, hasOpenPeriod: false, semVagas: false };
+      mocks.periodState = { loading: false, hasOpenPeriod: false };
       render(<RequestLicensePage />);
 
       expect(screen.getByText("Inscrições encerradas")).toBeInTheDocument();
     });
 
     it("exibe botao de voltar ao dashboard quando periodo fechado", () => {
-      mocks.periodState = { loading: false, hasOpenPeriod: false, semVagas: false };
+      mocks.periodState = { loading: false, hasOpenPeriod: false };
       render(<RequestLicensePage />);
 
       expect(
@@ -222,7 +222,7 @@ describe("RequestLicensePage", () => {
     });
 
     it("nao exibe StepIndicator quando periodo fechado", () => {
-      mocks.periodState = { loading: false, hasOpenPeriod: false, semVagas: false };
+      mocks.periodState = { loading: false, hasOpenPeriod: false };
       render(<RequestLicensePage />);
 
       expect(screen.queryByTestId("step-indicator")).not.toBeInTheDocument();
