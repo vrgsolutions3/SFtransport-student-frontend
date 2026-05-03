@@ -197,12 +197,19 @@ export default function RequestLicensePage() {
         }
       }
 
-      await api.postForm("/student/me/license-submit", formData);
+      const result = await api.postForm<{ waitlisted?: boolean; filaPosition?: number }>(
+        "/student/me/license-submit",
+        formData,
+      );
       removeWithTTL(STORAGE_KEY);
       removeWithTTL(STORAGE_KEY_STEP2);
       removeWithTTL(STORAGE_KEY_STEP3);
       refresh();
-      router.push("/dashboard?requested=true");
+      if (result?.waitlisted) {
+        router.push(`/dashboard?waitlisted=true&position=${result.filaPosition ?? 1}`);
+      } else {
+        router.push("/dashboard?requested=true");
+      }
     } catch (err: unknown) {
       const e = err as { message?: string };
       setError(e?.message ?? "Erro ao enviar pedido. Tente novamente.");
