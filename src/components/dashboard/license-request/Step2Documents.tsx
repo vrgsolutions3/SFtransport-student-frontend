@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useCallback, useMemo, useRef, useState } from "react";
 import { ArrowLeft, FileCheck, RefreshCw, ShieldCheck, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import DocumentUpload from "./DocumentUpload";
@@ -111,11 +111,11 @@ export default function Step2Documents({
   // Determine which documents should be visible for this user.
   // The canonical list lives in LICENSE_DOCUMENTS; we compute a filtered
   // `visibleDocs` array based on whether the student needs initial enrollment docs.
-  const visibleDocs = ((): typeof LICENSE_DOCUMENTS => {
+  const visibleDocs = useMemo(() => {
     if (isInitialEnrollmentRequired === null) return LICENSE_DOCUMENTS.filter((d) => d.photoType !== "GovernmentId" && d.photoType !== "ProofOfResidence");
     if (isInitialEnrollmentRequired) return LICENSE_DOCUMENTS;
     return LICENSE_DOCUMENTS.filter((d) => d.photoType !== "GovernmentId" && d.photoType !== "ProofOfResidence");
-  })();
+  }, [isInitialEnrollmentRequired]);
 
   const { entries: processorEntries, isProcessing, allValid, setFile, removeEntry } =
     useImageProcessor(model, visibleDocs.length);
