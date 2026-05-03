@@ -24,6 +24,8 @@ vi.mock("@/hooks/useInstitutionAutocomplete", () => ({
     loadError: "",
     institution: "",
     course: "",
+    selectedUniversityId: "uni-1",
+    selectedCourseId: "course-1",
   }),
 }));
 
@@ -33,6 +35,7 @@ function Step1Harness({ onContinue }: { onContinue: () => void }) {
     degree: "",
     shift: "",
     bloodType: "",
+    universityId: "",
   });
 
   return <Step1InfoForm data={data} onChange={setData} onContinue={onContinue} />;

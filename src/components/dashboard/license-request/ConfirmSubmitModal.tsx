@@ -8,7 +8,6 @@ interface ConfirmSubmitModalProps {
   onClose: () => void;
   onConfirm: () => void;
   submitting: boolean;
-  semVagas: boolean;
   institution: string;
   degree: string;
   shift: string;
@@ -20,7 +19,6 @@ export default function ConfirmSubmitModal({
   onClose,
   onConfirm,
   submitting,
-  semVagas,
   institution,
   degree,
   shift,
@@ -75,17 +73,7 @@ export default function ConfirmSubmitModal({
           ))}
         </div>
 
-        {/* Aviso */}
-        {semVagas && (
-          <div className="rounded-lg bg-surface-container-high p-4 text-on-surface text-sm leading-relaxed flex items-start gap-3">
-            <TriangleAlert className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-            <p>
-              <strong>Atenção:</strong> Não há vagas disponíveis no momento. Sua
-              solicitação entrará na fila de espera e você será notificado por
-              e-mail quando uma vaga for liberada.
-            </p>
-          </div>
-        )}
+        {/* Aviso removido: controle de vagas movido para backend/fluxo de fila */}
 
         {/* Botões */}
         <div className="flex flex-col gap-2">

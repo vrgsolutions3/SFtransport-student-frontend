@@ -43,6 +43,7 @@ const EMPTY_STEP1: Step1Data = {
   degree: "",
   shift: "",
   bloodType: "",
+  universityId: "",
 };
 const EMPTY_STEP3: Step3Data = { selections: [] };
 
@@ -67,8 +68,8 @@ const Step2Documents = dynamic(
 export default function RequestLicensePage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { isUnderReview, isWaitlisted, loading, licenseRequest } = useLicenseContext();
-  const { loading: periodLoading, hasOpenPeriod, semVagas } = useEnrollmentPeriodContext();
+  const { isUnderReview, isWaitlisted, loading, licenseRequest, refresh } = useLicenseContext();
+  const { loading: periodLoading, hasOpenPeriod } = useEnrollmentPeriodContext();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [step1, setStep1] = useState<Step1Data>(EMPTY_STEP1);
@@ -99,7 +100,7 @@ export default function RequestLicensePage() {
     }
 
     const savedStep1 = getWithTTL<Step1Data>(STORAGE_KEY, ONE_DAY_MS);
-    if (savedStep1) setStep1(savedStep1);
+    if (savedStep1) setStep1({ ...EMPTY_STEP1, ...savedStep1 });
 
     const savedStep3 = getWithTTL<Step3Data>(STORAGE_KEY_STEP3, ONE_DAY_MS);
     if (savedStep3) setStep3(savedStep3);
@@ -156,22 +157,59 @@ export default function RequestLicensePage() {
         const entry = documentEntries[doc.photoType];
         const blob = entry?.result?.processedBlob ?? entry?.file;
         if (!blob) continue;
+        // Client-side guard: documents that don't accept PDF must be images (JPEG/JPG/PNG)
+        if (!doc.acceptPdf) {
+          if (!blob.type || !["image/jpeg", "image/jpg", "image/png"].includes(blob.type)) {
+            const label = doc.label || "Arquivo";
+            setError(`${label} inválido: envie um arquivo JPEG, JPG ou PNG.`);
+            setSubmitting(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+          }
+        }
         const fallbackName =
-          blob.type === "image/jpeg"
+          blob.type === "image/jpeg" || blob.type === "image/jpg"
             ? `${doc.photoType}.jpg`
-            : `${doc.photoType}.pdf`;
-        const uploadFileName =
-          blob.type === "image/jpeg"
-            ? (entry?.file?.name?.replace(/\.[^.]+$/, "") || doc.photoType) +
-              ".jpg"
-            : (entry?.file?.name ?? fallbackName);
+            : blob.type === "image/png"
+            ? `${doc.photoType}.png`
+            : `${doc.photoType}.bin`;
+        const uploadFileName = (() => {
+          const original = entry?.file?.name;
+          if (!original) return fallbackName;
+          const base = original.replace(/\.[^.]+$/, "");
+          if (blob.type === "image/jpeg" || blob.type === "image/jpg") return `${base}.jpg`;
+          if (blob.type === "image/png") return `${base}.png`;
+          return original;
+        })();
         formData.append(doc.photoType, blob, uploadFileName);
       }
-      await api.postForm("/student/me/license-submit", formData);
+      // If an university was selected via autocomplete, ensure the student's profile
+      // is associated to the university (backend expects `student.universityId`).
+      if (step1.universityId) {
+        try {
+          await api.patch('/student/me', { universityId: step1.universityId });
+        } catch (err: unknown) {
+          const e = err as { message?: string };
+          setError(e?.message ?? 'Erro ao associar instituição. Tente novamente.');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      const result = await api.postForm<{ waitlisted?: boolean; filaPosition?: number }>(
+        "/student/me/license-submit",
+        formData,
+      );
       removeWithTTL(STORAGE_KEY);
       removeWithTTL(STORAGE_KEY_STEP2);
       removeWithTTL(STORAGE_KEY_STEP3);
-      router.push("/dashboard?requested=true");
+      refresh();
+      if (result?.waitlisted) {
+        router.push(`/dashboard?waitlisted=true&position=${result.filaPosition ?? 1}`);
+      } else {
+        router.push("/dashboard?requested=true");
+      }
     } catch (err: unknown) {
       const e = err as { message?: string };
       setError(e?.message ?? "Erro ao enviar pedido. Tente novamente.");
@@ -288,7 +326,6 @@ export default function RequestLicensePage() {
         degree={step1.degree}
         shift={step1.shift}
         totalPeriods={step3.selections.length}
-        semVagas={semVagas}
       />
     </div>
   );

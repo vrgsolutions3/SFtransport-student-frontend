@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+// Forçar rendering dinâmico para evitar erro de prerender com hooks de navegação
+export const dynamic = 'force-dynamic';
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useEnrollmentPeriodContext } from "@/contexts/EnrollmentPeriodContext";
@@ -13,6 +16,20 @@ import { PushNotificationsCard } from "@/components/pwa/PushNotificationsCard";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [justRequested, setJustRequested] = useState(false);
+  const [justWaitlisted, setJustWaitlisted] = useState(false);
+  const [justWaitlistedPosition, setJustWaitlistedPosition] = useState<number | null>(null);
+
+  useEffect(() => {
+    // leitura de query params no cliente para evitar hooks de navegação em SSR
+    const params = new URLSearchParams(window.location.search);
+    setJustRequested(params.get("requested") === "true");
+    if (params.get("waitlisted") === "true") {
+      setJustWaitlisted(true);
+      const pos = Number(params.get("position"));
+      setJustWaitlistedPosition(pos > 0 ? pos : null);
+    }
+  }, []);
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { hasOpenPeriod, loading: periodLoading } = useEnrollmentPeriodContext();
   const {
@@ -23,6 +40,7 @@ export default function DashboardPage() {
     isRejected,
     isWaitlisted,
     rejectionReason,
+    filaPosition,
   } = useLicenseContext();
 
   useEffect(() => {
@@ -41,7 +59,7 @@ export default function DashboardPage() {
       <DashboardHeader title="Menu Principal" />
       <main className="flex flex-col flex-1 pt-24 pb-8 px-6 max-w-lg mx-auto w-full">
         <DashboardGreeting name={displayName} />
-        {isWaitlisted && (
+        {(isWaitlisted || justWaitlisted) && (
           <section
             className="mb-4 rounded-2xl border border-tertiary/20 bg-tertiary-container p-4"
             style={{ boxShadow: "0 4px 16px var(--shadow-tertiary)" }}
@@ -54,9 +72,14 @@ export default function DashboardPage() {
                 <h2 className="font-headline font-bold text-on-tertiary text-sm">
                   Sua solicitação está na fila de espera
                 </h2>
-                <p className="text-on-tertiary text-sm/relaxed">
-                  Sua solicitação está na fila de espera. Você será notificado quando uma vaga for liberada.
-                </p>
+                {(() => {
+                  const pos = filaPosition ?? justWaitlistedPosition;
+                  return pos != null ? (
+                    <p className="text-on-tertiary text-sm/relaxed">Posição atual: {pos}</p>
+                  ) : (
+                    <p className="text-on-tertiary text-sm/relaxed">Sua solicitação está na fila de espera. Você será notificado quando uma vaga for liberada.</p>
+                  );
+                })()}
               </div>
             </div>
           </section>
@@ -65,11 +88,12 @@ export default function DashboardPage() {
         <DashboardActions
           licenseLoading={licenseLoading}
           hasLicense={hasLicense}
-          isUnderReview={isUnderReview}
+          isUnderReview={isUnderReview || justRequested}
           isRejected={isRejected}
-          isWaitlisted={isWaitlisted}
+          isWaitlisted={isWaitlisted || justWaitlisted}
           hasOpenEnrollmentPeriod={hasOpenPeriod}
           rejectionReason={rejectionReason}
+          filaPosition={filaPosition ?? justWaitlistedPosition ?? undefined}
           shouldShowDocumentsCard={shouldShowDocumentsCard}
         />
       </main>

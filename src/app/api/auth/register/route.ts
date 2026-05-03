@@ -32,7 +32,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: firstError, errors: fieldErrors }, { status: 400 });
     }
 
-    const upstream = await fetch(`${getBackendApiBaseUrl()}/auth/student/register`, {
+    const upstreamUrl = `${getBackendApiBaseUrl()}/auth/student/register`;
+    console.log('[BFF][auth/register] upstream:', upstreamUrl);
+
+    const upstream = await fetch(upstreamUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -43,6 +46,7 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await upstream.json().catch(() => ({}));
+    console.log('[BFF][auth/register] upstream status:', upstream.status);
     return NextResponse.json(data, { status: upstream.status });
   } catch (error) {
     console.error("[BFF][auth/register] error:", error);

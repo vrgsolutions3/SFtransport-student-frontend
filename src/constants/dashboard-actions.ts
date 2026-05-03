@@ -26,7 +26,7 @@ export const DASHBOARD_ACTIONS: DashboardAction[] = [
     title: "Ver Rotas Ativas",
     description: "Consulte as rotas e horários disponíveis",
     icon: Map,
-    variant: "primary",
+    variant: "surface",
     requiresLicense: false,
   },
 ];

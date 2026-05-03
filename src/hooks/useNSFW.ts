@@ -32,18 +32,48 @@ async function loadModelIfNeeded() {
       import("@tensorflow/tfjs"),
       import("nsfwjs"),
     ]);
+    const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
 
-    try {
-      await tf.setBackend("wasm");
-      await tf.ready();
-    } catch {
+    const canUseWebGL = (() => {
+      if (!isBrowser) return false;
       try {
-        await tf.setBackend("webgl");
-        await tf.ready();
+        const canvas = document.createElement("canvas");
+        return !!(
+          canvas.getContext &&
+          (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
+        );
       } catch {
-        await tf.setBackend("cpu");
-        await tf.ready();
+        return false;
       }
+    })();
+
+    const backends: string[] = [];
+    if (canUseWebGL) backends.push("webgl");
+    // prefer wasm if available on the build (nsfwjs may include wasm support)
+    if ((tf as any).wasm != null) backends.push("wasm");
+    backends.push("cpu");
+
+    let backendSet = false;
+    for (const b of backends) {
+      try {
+        // try to set backend silently; failure is expected on some devices
+        // tf.setBackend returns a promise that resolves to boolean
+        // we await tf.ready() to ensure backend initialization
+        // eslint-disable-next-line no-await-in-loop
+        const ok = await tf.setBackend(b as any);
+        if (ok) {
+          // eslint-disable-next-line no-await-in-loop
+          await tf.ready();
+          backendSet = true;
+          break;
+        }
+      } catch {
+        // ignore and try next
+      }
+    }
+
+    if (!backendSet) {
+      throw new Error("Nenhum backend do TensorFlow disponível (webgl/wasm/cpu).");
     }
 
     const model = await nsfwjs.load();
