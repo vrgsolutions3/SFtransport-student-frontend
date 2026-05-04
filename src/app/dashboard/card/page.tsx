@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Download } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLicenseContext } from "@/contexts/LicenseContext";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -75,14 +74,6 @@ export default function CardPage() {
     });
   }, [effectiveLicense]);
 
-  const handleDownload = () => {
-    if (!effectiveLicense) return;
-    const link = document.createElement("a");
-    link.href = `data:image/jpeg;base64,${effectiveLicense.imageLicense}`;
-    link.download = "carteirinha.jpg";
-    link.click();
-  };
-
   if (loading) {
     return <CardSkeleton hasLicense={false} />;
   }
@@ -114,6 +105,7 @@ export default function CardPage() {
 
         <CardViewer
           cardSides={cardSides}
+          qrCodeUrl={effectiveLicense.qrCodeUrl}
           lightboxOpen={lightboxOpen}
           onOpenLightbox={() => setLightboxOpen(true)}
           onSlideChange={(i) => setActiveSlide(i)}
@@ -131,18 +123,6 @@ export default function CardPage() {
           status={effectiveLicense.status}
         />
 
-        <button
-          onClick={handleDownload}
-          className="w-full bg-primary text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95"
-          style={{
-            height: "52px",
-            fontSize: "15px",
-            boxShadow: "0 4px 16px var(--shadow-primary)",
-          }}
-        >
-          <Download size={18} />
-          Baixar carteirinha
-        </button>
       </main>
     </div>
   );
