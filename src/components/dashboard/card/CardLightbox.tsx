@@ -15,7 +15,7 @@ export function CardLightbox({
   activeSlide,
   onClose,
 }: CardLightboxProps) {
-  if (!open || !cardSides) return null;
+  if (!open || !cardSides || activeSlide === 2) return null;
 
   return (
     <div
