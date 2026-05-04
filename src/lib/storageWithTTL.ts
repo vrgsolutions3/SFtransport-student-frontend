@@ -10,15 +10,23 @@ function isStorageAvailable(): boolean {
   return typeof window.localStorage !== "undefined";
 }
 
-export function setWithTTL<T>(key: string, data: T): void {
-  if (!isStorageAvailable()) return;
+export function setWithTTL<T>(key: string, data: T): boolean {
+  if (!isStorageAvailable()) return false;
 
   const entry: StorageEntry<T> = {
     data,
     timestamp: Date.now(),
   };
 
-  window.localStorage.setItem(key, JSON.stringify(entry));
+  try {
+    window.localStorage.setItem(key, JSON.stringify(entry));
+    return true;
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "QuotaExceededError") {
+      return false;
+    }
+    throw e;
+  }
 }
 
 export function getWithTTL<T>(key: string, ttlMs = ONE_DAY_MS): T | null {

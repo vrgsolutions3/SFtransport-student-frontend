@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useToast } from "@/contexts/ToastContext";
 import {
   CheckCircle,
   AlertTriangle,
@@ -9,6 +10,8 @@ import {
   FileText,
   ImagePlus,
   FilePlus,
+  Camera,
+  Images,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -25,7 +28,7 @@ interface DocumentUploadProps {
   disabled?: boolean;
 }
 
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const IMAGE_TYPES = ["image/jpeg", "image/png"];
 
 function validateSelectedFile(file: File, acceptPdf: boolean): string | null {
@@ -38,7 +41,7 @@ function validateSelectedFile(file: File, acceptPdf: boolean): string | null {
   }
 
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    return "O arquivo deve ter no máximo 5MB.";
+    return "O arquivo deve ter no máximo 10MB.";
   }
 
   return null;
@@ -143,7 +146,10 @@ export default function DocumentUpload({
   disabled = false,
 }: DocumentUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const { showToast } = useToast();
 
   const status: ImageValidationStatus = entry?.result?.status ?? "idle";
   const isPdf = entry?.file?.type === "application/pdf";
@@ -236,18 +242,14 @@ export default function DocumentUpload({
           <ValidationPanel entry={entry} validateRatio={config.validateRatio} />
         </div>
       ) : (
-        /* ── Botão de seleção ── */
         <div className="px-4 pb-4 pt-4">
           <button
             type="button"
-            onClick={() => inputRef.current?.click()}
+            onClick={() => config.acceptPdf ? inputRef.current?.click() : setSheetOpen(true)}
             disabled={disabled}
             className="w-full py-4 border-2 border-dashed border-outline-variant rounded-xl text-xs font-bold text-primary hover:bg-primary/5 hover:border-primary/50 transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-40"
           >
-            {config.acceptPdf
-              ? <FilePlus className="w-4 h-4" />
-              : <ImagePlus className="w-4 h-4" />
-            }
+            {config.acceptPdf ? <FilePlus className="w-4 h-4" /> : <ImagePlus className="w-4 h-4" />}
             {uploadLabel}
           </button>
         </div>
@@ -256,6 +258,62 @@ export default function DocumentUpload({
       {fileError && (
         <p className="px-4 pb-3 text-xs text-error">{fileError}</p>
       )}
+
+      {sheetOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/50"
+            onClick={() => setSheetOpen(false)}
+          />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-surface rounded-t-3xl px-6 pt-4 pb-10">
+            <p className="text-base font-bold text-on-surface mb-4">
+              {config.label}
+            </p>
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => { setSheetOpen(false); setTimeout(() => inputRef.current?.click(), 50); }}
+                className="w-full flex items-center gap-3 py-3 px-2 text-sm font-medium text-on-surface hover:bg-surface-container rounded-xl transition-all"
+              >
+                <Camera className="w-5 h-5 shrink-0" />
+                Usar câmera
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSheetOpen(false); setTimeout(() => galleryRef.current?.click(), 50); }}
+                className="w-full flex items-center gap-3 py-3 px-2 text-sm font-medium text-on-surface hover:bg-surface-container rounded-xl transition-all"
+              >
+                <Images className="w-5 h-5 shrink-0" />
+                Escolher da galeria
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/jpeg,image/png"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) { setFileError(null); return; }
+          const validationError = validateSelectedFile(file, false);
+          if (validationError) {
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+              showToast(`Arquivo muito grande — máximo 10MB (seu arquivo: ${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+            } else {
+              setFileError(validationError);
+            }
+            e.target.value = "";
+            return;
+          }
+          setFileError(null);
+          onFileSelect(file);
+          e.target.value = "";
+        }}
+        className="hidden"
+      />
 
       <input
         ref={inputRef}
@@ -272,7 +330,11 @@ export default function DocumentUpload({
 
           const validationError = validateSelectedFile(file, config.acceptPdf);
           if (validationError) {
-            setFileError(validationError);
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+              showToast(`Arquivo muito grande — máximo 10MB (seu arquivo: ${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+            } else {
+              setFileError(validationError);
+            }
             e.target.value = "";
             return;
           }

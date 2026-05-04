@@ -4,6 +4,7 @@ import Script from "next/script";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
+import { ToastProvider } from "@/contexts/ToastContext";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 
@@ -102,11 +103,13 @@ export default function RootLayout({
         className={`${inter.variable} ${manrope.variable} antialiased`}
       >
         <ThemeProvider>
-          <NotificationsProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </NotificationsProvider>
+          <ToastProvider>
+            <NotificationsProvider>
+              <AuthProvider>
+                {children}
+              </AuthProvider>
+            </NotificationsProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
