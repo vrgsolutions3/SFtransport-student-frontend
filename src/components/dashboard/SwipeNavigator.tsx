@@ -48,6 +48,8 @@ export function SwipeNavigator({ children }: { children: React.ReactNode }) {
       if (Math.abs(dx) < 60) return;
 
       const idx = currentIndexRef.current;
+      if (idx === -1) return;
+
       if (dx < 0 && idx < NAV_ORDER.length - 1) {
         router.push(NAV_ORDER[idx + 1]);
       } else if (dx > 0 && idx > 0) {

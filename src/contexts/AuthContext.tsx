@@ -31,7 +31,16 @@ interface AuthContextValue extends AuthState {
   login: (
     email: string,
     password: string
-  ) => Promise<{ success: true } | { success: false; error: string }>;
+  ) => Promise<
+    | { success: true }
+    | {
+        success: false;
+        error: string;
+        requiresOtpVerification?: boolean;
+        redirectTo?: string;
+        email?: string;
+      }
+  >;
   logout: () => Promise<void>;
   register: (data: {
     name: string;
@@ -235,7 +244,16 @@ export function AuthProvider({
     async (
       email: string,
       password: string
-    ): Promise<{ success: true } | { success: false; error: string }> => {
+    ): Promise<
+      | { success: true }
+      | {
+          success: false;
+          error: string;
+          requiresOtpVerification?: boolean;
+          redirectTo?: string;
+          email?: string;
+        }
+    > => {
       try {
         const { ok, data } = await authFetch("/api/auth/login", {
           method: "POST",
@@ -245,10 +263,36 @@ export function AuthProvider({
         });
 
         if (!ok) {
-          const payload = data as { message?: string };
+          const payload = data as {
+            message?: string;
+            requiresOtpVerification?: boolean;
+            redirectTo?: string;
+            email?: string;
+          };
+          const message = typeof payload.message === "string" ? payload.message : "Credenciais inv?lidas";
+          const pendingByMessage = /conta pendente de verific/i.test(message);
+          const resolvedEmail = payload.email ?? email;
+
+          if (pendingByMessage && resolvedEmail) {
+            try {
+              await authFetch("/api/auth/resend-code", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ email: resolvedEmail }),
+              });
+            } catch {
+              // Melhor esforço: mesmo se falhar o reenvio explícito, mantemos o fluxo para OTP.
+            }
+          }
+
           return {
             success: false,
-            error: typeof payload.message === "string" ? payload.message : "Credenciais inválidas",
+            error: message,
+            requiresOtpVerification:
+              payload.requiresOtpVerification === true || pendingByMessage,
+            redirectTo: payload.redirectTo,
+            email: resolvedEmail,
           };
         }
 

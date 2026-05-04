@@ -16,6 +16,17 @@ vi.mock("@/hooks/useAuth", () => ({
   }),
 }));
 
+vi.mock("./EulaModal", () => ({
+  EulaModal: ({ open, onAccept }: { open: boolean; onAccept: () => void; onClose: () => void }) =>
+    open ? (
+      <div>
+        <button type="button" onClick={onAccept}>
+          Aceitar termos
+        </button>
+      </div>
+    ) : null,
+}));
+
 describe("RegisterForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -51,6 +62,11 @@ describe("RegisterForm", () => {
       "Senha123",
     );
     await userEvent.type(screen.getByPlaceholderText("Digite a senha novamente"), "Senha123");
+
+    // abre o modal de termos e aceita
+    await userEvent.click(screen.getByRole("button", { name: /li e aceito|termos/i }));
+    await userEvent.click(screen.getByRole("button", { name: /aceitar termos/i }));
+
     await userEvent.click(screen.getByRole("button", { name: /criar conta/i }));
 
     expect(await screen.findByText("Cadastro indisponivel")).toBeInTheDocument();

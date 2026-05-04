@@ -61,7 +61,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const profileData = profileRes.ok ? await profileRes.json().catch(() => ({})) : {};
+    if (!profileRes.ok) {
+      const response = NextResponse.json(
+        { message: "Perfil do estudante n??o encontrado para esta sess??o.", csrf },
+        { status: 401 },
+      );
+      response.cookies.set(SID_COOKIE_NAME, "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 0,
+      });
+      return response;
+    }
+
+    const profileData = await profileRes.json().catch(() => ({}));
 
     const userId = typeof meData?.userId === "string" ? meData.userId : "";
     const email = typeof profileData?.email === "string" ? profileData.email : userId;

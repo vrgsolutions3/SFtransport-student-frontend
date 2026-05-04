@@ -13,7 +13,6 @@ export interface UseEnrollmentPeriodResult {
   period: EnrollmentPeriod | null;
   loading: boolean;
   hasOpenPeriod: boolean;
-  semVagas: boolean;
 }
 
 export function useEnrollmentPeriod(
@@ -73,13 +72,9 @@ export function useEnrollmentPeriod(
     new Date(period.startDate).getTime() <= now &&
     new Date(period.endDate).getTime() >= now;
 
-  const semVagas =
-    period !== null && period.filledSlots >= period.totalSlots;
-
   return {
     period,
     loading: enabled ? loading : false,
     hasOpenPeriod,
-    semVagas,
   };
 }

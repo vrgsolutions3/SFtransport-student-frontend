@@ -52,9 +52,14 @@ export function LoginForm() {
       if (result.success) {
         router.push("/dashboard");
       } else {
+        if (result.requiresOtpVerification) {
+          const email = encodeURIComponent(result.email ?? formData.email);
+          router.push(`/verify-email?email=${email}`);
+          return;
+        }
         setErrors((prev) => ({
           ...prev,
-          general: result.error ?? "Credenciais inválidas",
+          general: result.error ?? "Credenciais inv??lidas",
         }));
       }
     } finally {
