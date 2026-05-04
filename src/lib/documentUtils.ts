@@ -2,7 +2,9 @@ export type PhotoType =
   | "ProfilePhoto"
   | "EnrollmentProof"
   | "CourseSchedule"
-  | "LicenseImage";
+  | "LicenseImage"
+  | "GovernmentId"
+  | "ProofOfResidence";
 
 export type StudentImage = {
   _id: string;
@@ -36,12 +38,19 @@ export const PHOTO_LABELS: Record<PhotoType, string> = {
   EnrollmentProof: "Comprovante de Matrícula",
   CourseSchedule: "Grade Horária",
   LicenseImage: "Carteirinha",
+  GovernmentId: "Documento de Identidade",
+  ProofOfResidence: "Comprovante de Residência",
 };
 
 export const DISPLAY_ORDER: PhotoType[] = [
   "ProfilePhoto",
   "EnrollmentProof",
   "CourseSchedule",
+];
+
+export const PERSONAL_DISPLAY_ORDER: PhotoType[] = [
+  "GovernmentId",
+  "ProofOfResidence",
 ];
 
 export function resolveDocumentData(image: StudentImage): {
@@ -67,6 +76,8 @@ export function fileNameForType(photoType: PhotoType, isPdf: boolean): string {
     EnrollmentProof: "comprovante-matricula",
     CourseSchedule: "grade-horaria",
     LicenseImage: "carteirinha",
+    GovernmentId: "documento-identidade",
+    ProofOfResidence: "comprovante-residencia",
   };
   return `${base[photoType]}.${isPdf ? "pdf" : "jpg"}`;
 }
