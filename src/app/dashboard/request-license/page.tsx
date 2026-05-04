@@ -129,7 +129,11 @@ export default function RequestLicensePage() {
   const handleContinueFromStep2 = async () => {
     setWithTTL(STORAGE_KEY, step1);
     const serialized = await serializeDocumentEntries(documentEntries);
-    setWithTTL(STORAGE_KEY_STEP2, serialized);
+    const saved = setWithTTL(STORAGE_KEY_STEP2, serialized);
+    if (!saved) {
+      setError("Armazenamento do dispositivo está cheio. Tente imagens menores ou limpe o cache do navegador.");
+      return;
+    }
     setStep(3);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

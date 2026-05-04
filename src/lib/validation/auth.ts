@@ -23,7 +23,7 @@ const emailSchema = z
   .max(254, "Email deve ter no maximo 254 caracteres")
   .email("Email invalido");
 
-const passwordRules = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
+const passwordRules = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/;
 
 export const loginCredentialsSchema = z.object({
   email: emailSchema,
@@ -53,7 +53,7 @@ export const registerPayloadSchema = z.object({
     .string({ error: "Senha e obrigatoria" })
     .min(8, "Senha deve ter no minimo 8 caracteres")
     .max(64, "Senha deve ter no maximo 64 caracteres")
-    .regex(passwordRules, "Senha deve ter maiuscula, minuscula e numero"),
+    .regex(passwordRules, "Senha deve ter maiuscula, minuscula, numero e caractere especial"),
 });
 
 export const registerFormSchema = registerPayloadSchema
@@ -87,7 +87,7 @@ export const resetPasswordSchema = z.object({
     .string({ error: "Senha e obrigatoria" })
     .min(8, "Senha deve ter no minimo 8 caracteres")
     .max(64, "Senha deve ter no maximo 64 caracteres")
-    .regex(passwordRules, "Senha deve ter maiuscula, minuscula e numero"),
+    .regex(passwordRules, "Senha deve ter maiuscula, minuscula, numero e caractere especial"),
 });
 
 export const resetPasswordFormSchema = z
