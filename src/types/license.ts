@@ -9,6 +9,7 @@ export interface License {
   expirationDate: string;
   createdAt: string;
   updatedAt: string;
+  qrCodeUrl?: string | null;
 }
 
 export interface LicenseRequest {

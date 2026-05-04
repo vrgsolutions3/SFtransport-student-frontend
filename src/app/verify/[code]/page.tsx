@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { BusFront, CheckCircle, XCircle, AlertCircle, LoaderCircle } from "lucide-react";
+import Link from "next/link";
+import { BusFront, CheckCircle, XCircle, AlertCircle, LoaderCircle, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { API_BASE_URL } from "@/lib/apiClient";
+import { useAuth } from "@/hooks/useAuth";
 
 type VerifyResult =
   | { exists: false }
@@ -16,6 +18,7 @@ export default function VerifyPage() {
   const { code } = useParams<{ code: string }>();
   const normalizedCode = typeof code === "string" ? code : "";
   const [state, setState] = useState<PageState>("loading");
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!normalizedCode) {
@@ -43,11 +46,22 @@ export default function VerifyPage() {
     <div className="min-h-screen bg-surface flex flex-col">
       {/* Header */}
       <header className="w-full bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant/30 flex items-center justify-between px-5 h-14">
-        <div className="flex items-center gap-2">
-          <BusFront className="text-primary" size={20} />
-          <span className="font-headline font-bold text-on-surface text-sm tracking-tight">
-            Transporte São Fidélis
-          </span>
+        <div className="flex items-center gap-3">
+          {!authLoading && (
+            <Link
+              href={isAuthenticated ? "/dashboard" : "/"}
+              className="p-1.5 rounded-full text-on-surface-variant hover:bg-surface-container-low transition-colors"
+              aria-label="Voltar"
+            >
+              <ArrowLeft size={20} />
+            </Link>
+          )}
+          <div className="flex items-center gap-2">
+            <BusFront className="text-primary" size={20} />
+            <span className="font-headline font-bold text-on-surface text-sm tracking-tight">
+              Transporte São Fidélis
+            </span>
+          </div>
         </div>
         <ThemeToggle className="text-on-surface-variant hover:bg-surface-container-low" />
       </header>
