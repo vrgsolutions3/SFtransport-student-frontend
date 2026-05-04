@@ -10,6 +10,7 @@ import { formatPhone } from "@/lib/formatters";
 import { Mail, Phone, UserRound, Lock, Send, CreditCard } from "lucide-react";
 import { getFieldErrors, registerFormSchema } from "@/lib/validation/auth";
 import { EulaModal } from "./EulaModal";
+import { PasswordStrengthIndicator } from "./PasswordStrengthIndicator";
 
 function formatCpf(digits: string): string {
   if (digits.length === 0) return "";
@@ -152,18 +153,21 @@ export function RegisterForm() {
           inputMode="numeric"
         />
 
-        <Input
-          label="Senha"
-          type="password"
-          icon={Lock}
-          placeholder="Mín. 8 caracteres, maiúscula e número"
-          value={formData.password}
-          onChange={(e) =>
-            setFormData({ ...formData, password: e.target.value })
-          }
-          error={errors.password}
-          maxLength={64}
-        />
+        <div>
+          <Input
+            label="Senha"
+            type="password"
+            icon={Lock}
+            placeholder="Mín. 8 caracteres"
+            value={formData.password}
+            onChange={(e) =>
+              setFormData({ ...formData, password: e.target.value })
+            }
+            error={errors.password}
+            maxLength={64}
+          />
+          <PasswordStrengthIndicator password={formData.password} />
+        </div>
 
         <Input
           label="Confirmar Senha"

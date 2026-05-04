@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
 import { Lock, ArrowRight, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 import { getFieldErrors, resetPasswordFormSchema } from "@/lib/validation/auth";
+import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
 
 interface FormState {
   password: string;
@@ -196,9 +197,7 @@ function ResetPasswordContent() {
                   error={errors.password}
                   disabled={loading}
                 />
-                <p className="text-xs text-on-surface-variant ml-1">
-                  Mínimo 8 caracteres, com maiúscula, minúscula e número
-                </p>
+                <PasswordStrengthIndicator password={formData.password} />
               </div>
 
               <div className="space-y-2">

@@ -14,13 +14,15 @@ import { ProfilePhotoSheet } from "@/components/dashboard/profile/ProfilePhotoSh
 import ProfileSkeleton from "@/components/dashboard/profile/ProfileSkeleton";
 import type { StudentProfile } from "@/lib/profileUtils";
 import { NotificationToggleRow } from "@/components/dashboard/profile/NotificationToggleRow";
+import { useToast } from "@/contexts/ToastContext";
 
 const ALLOWED_PROFILE_PHOTO_TYPES = ["image/jpeg", "image/png"];
-const MAX_PROFILE_PHOTO_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_PROFILE_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
 
 export default function ProfilePage() {
   const router = useRouter();
   const { logout } = useAuth();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [photoSheetOpen, setPhotoSheetOpen] = useState(false);
@@ -55,7 +57,7 @@ export default function ProfilePage() {
     }
 
     if (file.size > MAX_PROFILE_PHOTO_SIZE_BYTES) {
-      return "O arquivo deve ter no máximo 5MB.";
+      return "O arquivo deve ter no máximo 10MB.";
     }
 
     return null;
@@ -67,7 +69,11 @@ export default function ProfilePage() {
 
     const validationError = validateProfilePhoto(file);
     if (validationError) {
-      setPhotoError(validationError);
+      if (file.size > MAX_PROFILE_PHOTO_SIZE_BYTES) {
+        showToast(`Foto muito grande — máximo 10MB (seu arquivo: ${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      } else {
+        setPhotoError(validationError);
+      }
       e.target.value = "";
       return;
     }
