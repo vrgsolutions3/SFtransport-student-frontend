@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { apiClient } from "@/lib/apiClient";
@@ -14,6 +15,7 @@ import { DocumentsBanner } from "@/components/dashboard/documents/DocumentsBanne
 import { DocumentsEmpty } from "@/components/dashboard/documents/DocumentsEmpty";
 import {
   DISPLAY_ORDER,
+  PERSONAL_DISPLAY_ORDER,
   type StudentImage,
   type StudentImageFileResponse,
   type StudentImageListItem,
@@ -29,6 +31,14 @@ function DocumentsPageContent() {
     loading: licenseLoading,
   } = useLicenseContext();
 
+  const [activeTab, setActiveTab] = useState<"license" | "personal">("license");
+  const [swipeDirection, setSwipeDirection] = useState(1);
+  const touchStartX = useRef<number | null>(null);
+
+  const changeTab = (tab: "license" | "personal") => {
+    setSwipeDirection(tab === "personal" ? 1 : -1);
+    setActiveTab(tab);
+  };
   const [loading, setLoading] = useState(true);
   const [images, setImages] = useState<StudentImage[]>([]);
   const [preview, setPreview] = useState<{
@@ -98,12 +108,26 @@ function DocumentsPageContent() {
     };
   }, [authLoading, isAuthenticated]);
 
-  const visibleImages = useMemo(() => {
-    const byType = new Map(images.map((img) => [img.photoType, img]));
-    return DISPLAY_ORDER.map((type) => byType.get(type)).filter(
-      Boolean,
-    ) as StudentImage[];
-  }, [images]);
+  const byType = useMemo(
+    () => new Map(images.map((img) => [img.photoType, img])),
+    [images],
+  );
+
+  const licenseImages = useMemo(
+    () =>
+      DISPLAY_ORDER.map((type) => byType.get(type)).filter(
+        Boolean,
+      ) as StudentImage[],
+    [byType],
+  );
+
+  const personalImages = useMemo(
+    () =>
+      PERSONAL_DISPLAY_ORDER.map((type) => byType.get(type)).filter(
+        Boolean,
+      ) as StudentImage[],
+    [byType],
+  );
 
   const hasPendingUpdateRequest =
     licenseRequest?.type === "update" && licenseRequest?.status === "pending";
@@ -137,21 +161,91 @@ function DocumentsPageContent() {
           onCloseUpdated={() => setShowUpdatedBanner(false)}
         />
 
-        {visibleImages.length === 0 ? (
-          <DocumentsEmpty />
-        ) : (
-          <section className="space-y-4">
-            {visibleImages.map((image) => (
-              <DocumentCard
-                key={image._id}
-                image={image}
-                onPreview={(src, title) =>
-                  setPreview({ src, title })
-                }
-              />
-            ))}
-          </section>
-        )}
+        <div className="flex bg-surface-container-low rounded-xl p-1 mb-6">
+          <button
+            type="button"
+            onClick={() => changeTab("license")}
+            className={`flex-1 h-9 rounded-lg text-sm font-semibold transition-all duration-200 ${
+              activeTab === "license"
+                ? "bg-surface text-on-surface shadow-sm"
+                : "text-on-surface-variant"
+            }`}
+          >
+            Carteirinha
+          </button>
+          <button
+            type="button"
+            onClick={() => changeTab("personal")}
+            className={`flex-1 h-9 rounded-lg text-sm font-semibold transition-all duration-200 ${
+              activeTab === "personal"
+                ? "bg-surface text-on-surface shadow-sm"
+                : "text-on-surface-variant"
+            }`}
+          >
+            Pessoais
+          </button>
+        </div>
+
+        <div
+          className="overflow-hidden"
+          onTouchStart={(e) => {
+            if (preview) return;
+            touchStartX.current = e.touches[0].clientX;
+          }}
+          onTouchEnd={(e) => {
+            if (preview || touchStartX.current === null) return;
+            const dx = e.changedTouches[0].clientX - touchStartX.current;
+            touchStartX.current = null;
+            if (Math.abs(dx) < 50) return;
+            if (dx < 0 && activeTab === "license") changeTab("personal");
+            if (dx > 0 && activeTab === "personal") changeTab("license");
+          }}
+        >
+          <AnimatePresence mode="wait" initial={false} custom={swipeDirection}>
+            <motion.section
+              key={activeTab}
+              custom={swipeDirection}
+              variants={{
+                enter: (d: number) => ({ x: d * 60, opacity: 0 }),
+                center: { x: 0, opacity: 1 },
+                exit: (d: number) => ({ x: d * -60, opacity: 0 }),
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ type: "spring", stiffness: 400, damping: 35 }}
+              className="space-y-4"
+            >
+              {activeTab === "license" ? (
+                licenseImages.length === 0 ? (
+                  <DocumentsEmpty />
+                ) : (
+                  licenseImages.map((image) => (
+                    <DocumentCard
+                      key={image._id}
+                      image={image}
+                      onPreview={(src, title) => setPreview({ src, title })}
+                    />
+                  ))
+                )
+              ) : personalImages.length === 0 ? (
+                <div className="bg-surface-container-low border border-outline-variant/30 rounded-2xl p-6 text-center">
+                  <p className="text-sm text-on-surface-variant">
+                    Nenhum documento pessoal enviado ainda.
+                  </p>
+                </div>
+              ) : (
+                personalImages.map((image) => (
+                  <DocumentCard
+                    key={image._id}
+                    image={image}
+                    onPreview={(src, title) => setPreview({ src, title })}
+                  />
+                ))
+              )}
+            </motion.section>
+          </AnimatePresence>
+        </div>
 
         <footer className="mt-6">
           <div className="space-y-2">
