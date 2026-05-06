@@ -28,7 +28,7 @@ import {
   ONE_DAY_MS,
   removeWithTTL,
   setWithTTL,
-} from "@/lib/storageWithTTL";
+} from "@/lib/indexedDbWithTTL";
 import type { DocumentEntries } from "@/components/dashboard/license-request/Step2Documents";
 import type { PersistedStep2 } from "@/lib/documentEntries";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -99,26 +99,29 @@ export default function RequestLicensePage() {
       return;
     }
 
-    const savedStep1 = getWithTTL<Step1Data>(STORAGE_KEY, ONE_DAY_MS);
-    if (savedStep1) setStep1({ ...EMPTY_STEP1, ...savedStep1 });
+    const loadPersisted = async () => {
+      const savedStep1 = await getWithTTL<Step1Data>(STORAGE_KEY, ONE_DAY_MS);
+      if (!cancelled && savedStep1) setStep1({ ...EMPTY_STEP1, ...savedStep1 });
 
-    const savedStep3 = getWithTTL<Step3Data>(STORAGE_KEY_STEP3, ONE_DAY_MS);
-    if (savedStep3) setStep3(savedStep3);
+      const savedStep3 = await getWithTTL<Step3Data>(STORAGE_KEY_STEP3, ONE_DAY_MS);
+      if (!cancelled && savedStep3) setStep3(savedStep3);
 
-    const savedStep2 = getWithTTL<PersistedStep2>(STORAGE_KEY_STEP2, ONE_DAY_MS);
-    if (savedStep2) {
-      void deserializeDocumentEntries(savedStep2).then((entries) => {
+      const savedStep2 = await getWithTTL<PersistedStep2>(STORAGE_KEY_STEP2, ONE_DAY_MS);
+      if (!cancelled && savedStep2) {
+        const entries = await deserializeDocumentEntries(savedStep2);
         if (!cancelled) setDocumentEntries(entries);
-      });
-    }
+      }
+    };
+
+    void loadPersisted();
 
     return () => {
       cancelled = true;
     };
   }, [isUnderReview, isWaitlisted, loading, licenseRequest?.type, router]);
 
-  const handleContinueFromStep1 = () => {
-    setWithTTL(STORAGE_KEY, step1);
+  const handleContinueFromStep1 = async () => {
+    await setWithTTL(STORAGE_KEY, step1);
     setStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -127,9 +130,9 @@ export default function RequestLicensePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const handleContinueFromStep2 = async () => {
-    setWithTTL(STORAGE_KEY, step1);
+    await setWithTTL(STORAGE_KEY, step1);
     const serialized = await serializeDocumentEntries(documentEntries);
-    const saved = setWithTTL(STORAGE_KEY_STEP2, serialized);
+    const saved = await setWithTTL(STORAGE_KEY_STEP2, serialized);
     if (!saved) {
       setError("Armazenamento do dispositivo está cheio. Tente imagens menores ou limpe o cache do navegador.");
       return;
@@ -146,7 +149,7 @@ export default function RequestLicensePage() {
     setSubmitting(true);
     setError("");
     try {
-      setWithTTL(STORAGE_KEY_STEP3, step3);
+      await setWithTTL(STORAGE_KEY_STEP3, step3);
       const formData = new FormData();
       const appendIfFilled = (key: string, value: string) => {
         const normalized = value.trim();
@@ -205,9 +208,9 @@ export default function RequestLicensePage() {
         "/student/me/license-submit",
         formData,
       );
-      removeWithTTL(STORAGE_KEY);
-      removeWithTTL(STORAGE_KEY_STEP2);
-      removeWithTTL(STORAGE_KEY_STEP3);
+      await removeWithTTL(STORAGE_KEY);
+      await removeWithTTL(STORAGE_KEY_STEP2);
+      await removeWithTTL(STORAGE_KEY_STEP3);
       refresh();
       if (result?.waitlisted) {
         router.push(`/dashboard?waitlisted=true&position=${result.filaPosition ?? 1}`);
