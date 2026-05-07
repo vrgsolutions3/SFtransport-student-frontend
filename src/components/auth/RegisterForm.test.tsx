@@ -40,7 +40,7 @@ describe("RegisterForm", () => {
     await userEvent.type(screen.getByPlaceholderText("(22) 99999-9999"), "123");
     await userEvent.type(screen.getByPlaceholderText("000.000.000-00"), "11111111111");
     await userEvent.type(
-      screen.getByPlaceholderText("Mín. 8 caracteres, maiúscula e número"),
+      screen.getByPlaceholderText("Mín. 8 caracteres"),
       "abc",
     );
     await userEvent.type(screen.getByPlaceholderText("Digite a senha novamente"), "xyz");
@@ -58,7 +58,7 @@ describe("RegisterForm", () => {
     await userEvent.type(screen.getByPlaceholderText("(22) 99999-9999"), "22999999999");
     await userEvent.type(screen.getByPlaceholderText("000.000.000-00"), "52998224725");
     await userEvent.type(
-      screen.getByPlaceholderText("Mín. 8 caracteres, maiúscula e número"),
+      screen.getByPlaceholderText("Mín. 8 caracteres"),
       "Senha123",
     );
     await userEvent.type(screen.getByPlaceholderText("Digite a senha novamente"), "Senha123");

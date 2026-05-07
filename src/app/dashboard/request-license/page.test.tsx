@@ -82,10 +82,10 @@ vi.mock("@/components/ui/ThemeToggle", () => ({
   ThemeToggle: () => <button type="button">toggle</button>,
 }));
 
-vi.mock("@/lib/storageWithTTL", () => ({
-  getWithTTL: () => null,
-  setWithTTL: () => undefined,
-  removeWithTTL: () => undefined,
+vi.mock("@/lib/indexedDbWithTTL", () => ({
+  getWithTTL: () => Promise.resolve(null),
+  setWithTTL: () => Promise.resolve(true),
+  removeWithTTL: () => Promise.resolve(),
   ONE_DAY_MS: 86_400_000,
 }));
 
