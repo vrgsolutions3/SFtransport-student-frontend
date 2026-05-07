@@ -4,22 +4,13 @@ import type { DocumentEntries } from "@/components/dashboard/license-request/Ste
 export interface PersistedDocumentEntry {
   name: string;
   type: string;
-  dataUrl: string;
+  blob: Blob;
 }
 
 export type PersistedStep2 = Record<string, PersistedDocumentEntry | null>;
 
 export function makeEmptyEntries(): DocumentEntries {
   return Object.fromEntries(LICENSE_DOCUMENTS.map((d) => [d.photoType, null]));
-}
-
-export function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Falha ao ler arquivo"));
-    reader.readAsDataURL(file);
-  });
 }
 
 export async function serializeDocumentEntries(
@@ -36,29 +27,14 @@ export async function serializeDocumentEntries(
       continue;
     }
 
-    const dataUrl = await fileToDataUrl(source);
     serialized[doc.photoType] = {
       name: source.name,
       type: source.type,
-      dataUrl,
+      blob: source,
     };
   }
 
   return serialized;
-}
-
-export function dataUrlToFile(
-  dataUrl: string,
-  fileName: string,
-  type: string,
-): File {
-  const [, base64] = dataUrl.split(",");
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return new File([bytes], fileName, { type });
 }
 
 export async function deserializeDocumentEntries(
@@ -70,14 +46,10 @@ export async function deserializeDocumentEntries(
     const persisted = data[doc.photoType];
     if (!persisted) continue;
 
-    const file = await dataUrlToFile(
-      persisted.dataUrl,
-      persisted.name,
-      persisted.type,
-    );
+    const file = new File([persisted.blob], persisted.name, { type: persisted.type });
     hydrated[doc.photoType] = {
       file,
-      previewUrl: file.type.startsWith("image/") ? persisted.dataUrl : "",
+      previewUrl: "",
       result: null,
     };
   }
